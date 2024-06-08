@@ -1,9 +1,9 @@
 # API and rides
 fastapi==0.111.0
-flask==3.0.3
-gunicorn==22.0.0
+uvicorn==0.30.1
 python-decouple==3.8
-python-keycloak==4.0.0
+python-keycloak==4.1.0
+itsdangerous==2.2.0
 # Rides
 psycopg2-binary==2.9.9
 SQLAlchemy==2.0.30

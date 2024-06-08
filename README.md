@@ -33,7 +33,7 @@ Command `docker compose build` builds Docker image and command `docker compose u
 To run all checks and tests, execute:
 
 ```shell
-docker compose run --rm --entrypoint ./entrypoint.sh web test local
+docker compose run --rm --entrypoint ./entrypoint.sh api test local
 ```
 
 
@@ -46,22 +46,21 @@ docker compose run --rm --entrypoint ./entrypoint.sh web test local
 3. Select **Docker compose** from the list of environments
 4. Select the service **web** and press **OK**
 
-## Configure Flask server
+## Configure FastAPI server
 
 1. Add a new Run/Debug configuration in the menu **Run / Edit Configurations...**
-using the template **Flask server**
-2. Specify `main.py`/`debug.py` as **Target**
-3. Specify `server` (the name of the variable in `main.py`/`debug.py`) as **Application**
-4. Specify `--host=0.0.0.0 --port=8000` as **Additional options**
-5. Enable **FLASK_DEBUG** (optional)
-6. Select the Python interpreter created in **configure the project interpreter**
+using the template **FastAPI**
+2. Set file with application as **Application file**
+3. Set `app` as **Application name**
+4. Set `--reload --host=0.0.0.0 --port=8000` as **Uvicorn options**
+5. Select the Python interpreter created in **configure the project interpreter**
 
 ## Configure Pytest tests
 
 1. Add a new Run/Debug configuration in the menu **Run / Edit Configurations...**
 using the template **Python tests/pytest**
 2. Specify `tests` folder as **Module name**
-3. Specify `--numprocesses auto` as **Additional Arguments** (optional)
+3. Specify `--numprocesses auto --no-cov` as **Additional Arguments** (optional)
 4. Select the Python interpreter created in **configure the project interpreter**
 
 

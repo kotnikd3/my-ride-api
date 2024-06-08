@@ -1,6 +1,6 @@
 import pytest
 
-from api.main import app as application
+from api.infrastructure.controllers import app as application
 
 
 @pytest.fixture()

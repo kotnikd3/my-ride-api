@@ -1,3 +1,7 @@
+class AccessTokenExpiredError(Exception):
+    pass
+
+
 class RefreshTokenExpiredError(Exception):
     pass
 

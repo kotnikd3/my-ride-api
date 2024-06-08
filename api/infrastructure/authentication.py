@@ -1,16 +1,50 @@
+import json
+
+from cryptography.fernet import Fernet
 from decouple import config
-from jwcrypto import jwk, jwt
+from jwcrypto import jwk
 from jwcrypto.jwt import JWException, JWTExpired
 from keycloak import KeycloakOpenID, KeycloakPostError
 from keycloak.exceptions import KeycloakConnectionError
 
-from api.services.exceptions import InvalidTokenError, RefreshTokenExpiredError
+from api.services.exceptions import (
+    AccessTokenExpiredError,
+    InvalidTokenError,
+    RefreshTokenExpiredError,
+)
 
 OAUTH_SERVER_URL = config('OAUTH_SERVER_URL')
 OAUTH_REALM_NAME = config('OAUTH_REALM_NAME')
 OAUTH_CLIENT_ID = config('OAUTH_CLIENT_ID')
 OAUTH_SECRET_KEY = config('OAUTH_SECRET_KEY')
 OAUTH_REALM_URL = f'{OAUTH_SERVER_URL}/realms/{OAUTH_REALM_NAME}'
+
+
+class SessionValidator:
+    def __init__(self, fernet_key: str):
+        self.fernet = Fernet('zGFEFZ7NvB4qWoZfs62EoDpzCjK3MV9cH7V4bJ0zP-E=')
+
+    def encrypt(self, data: dict) -> str:
+        try:
+            # Convert the dictionary to a JSON string
+            json_data: str = json.dumps(data)
+            # Encrypt the JSON string
+            encrypted_data: bytes = self.fernet.encrypt(json_data.encode())
+        except Exception as e:
+            raise InvalidTokenError(e)
+        else:
+            return encrypted_data.decode()
+
+    def decrypt(self, encrypted_data: str) -> dict:
+        try:
+            # Decrypt the encrypted data
+            decrypted_data: bytes = self.fernet.decrypt(encrypted_data.encode())
+            # Convert the JSON string back to a dictionary
+            json_data: dict = json.loads(decrypted_data.decode())
+        except Exception as e:
+            raise InvalidTokenError(e)
+        else:
+            return json_data
 
 
 class KeycloakTokenValidator:
@@ -37,7 +71,7 @@ class KeycloakTokenValidator:
             )
             self.public_key = jwk.JWK.from_pem(_public_key.encode('utf-8'))
 
-    def _authenticate_token(self, token_string) -> dict:
+    def authenticate_token(self, token_string) -> dict:
         if self.public_key is None:
             # If Keycloak is not reachable when __init(self)__ is executed, try
             # reaching it on every request
@@ -58,8 +92,10 @@ class KeycloakTokenValidator:
                 key=self.public_key,
                 check_claims=check_claims,
             )
-        except jwt.JWException as error:
-            raise error
+        except JWTExpired:
+            raise AccessTokenExpiredError()
+        except JWException as error:
+            raise InvalidTokenError(repr(error))
         else:
             return claims
 
@@ -80,13 +116,8 @@ class KeycloakTokenValidator:
         response = self.keycloak.introspect(access_token)
         return response.get('active', False)
 
-    def validate_tokens(self, access_token: str, refresh_token: str) -> dict:
+    def fetch_new_tokens(self, refresh_token: str) -> dict:
         try:
-            self._authenticate_token(token_string=access_token)
-        except JWTExpired:
-            try:
-                return self.keycloak.refresh_token(refresh_token=refresh_token)
-            except KeycloakPostError:
-                raise RefreshTokenExpiredError()
-        except JWException as error:
-            raise InvalidTokenError(repr(error))
+            return self.keycloak.refresh_token(refresh_token=refresh_token)
+        except KeycloakPostError:
+            raise RefreshTokenExpiredError()

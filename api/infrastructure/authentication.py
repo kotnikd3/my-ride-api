@@ -28,7 +28,7 @@ class KeycloakTokenValidator:
 
         self._set_public_key()
 
-    def _set_public_key(self):
+    def _set_public_key(self) -> None:
         try:
             _public_key = self.keycloak.public_key()
         except KeycloakConnectionError:
@@ -62,8 +62,8 @@ class KeycloakTokenValidator:
                 key=self.public_key,
                 check_claims=check_claims,
             )
-        except JWTExpired:
-            raise AccessTokenExpiredError()
+        except JWTExpired as error:
+            raise AccessTokenExpiredError(repr(error))
         except JWException as error:
             raise InvalidTokenError(repr(error))
         else:
@@ -85,5 +85,5 @@ class KeycloakTokenValidator:
     def fetch_new_tokens(self, refresh_token: str) -> dict:
         try:
             return self.keycloak.refresh_token(refresh_token=refresh_token)
-        except KeycloakPostError:
-            raise RefreshTokenExpiredError()
+        except KeycloakPostError as error:
+            raise RefreshTokenExpiredError(repr(error))

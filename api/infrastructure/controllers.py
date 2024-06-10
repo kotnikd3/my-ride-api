@@ -5,8 +5,10 @@ from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
 
 from api.infrastructure.authentication import (
-    KeycloakTokenValidator, SessionValidator,
+    KeycloakTokenValidator,
 )
+from api.services.encryption import SessionEncryptor
+
 from api.services.exceptions import (
     AccessTokenExpiredError,
     InvalidTokenError,
@@ -23,7 +25,7 @@ DEBUG = config('DEBUG', default=False, cast=bool)
 
 app = FastAPI(debug=DEBUG)
 cookie_sec = APIKeyCookie(name=COOKIE_NAME, auto_error=False)
-session_validator = SessionValidator(fernet_key=config('SECRET_KEY'))
+session_encryptor = SessionEncryptor(fernet_key=config('SECRET_KEY'))
 
 
 templates = Jinja2Templates(directory="api/templates")
@@ -49,7 +51,7 @@ async def session_required(session: str = Depends(cookie_sec)) -> dict:
             status_code=401,
         )
     try:
-        return session_validator.decrypt(session)
+        return session_encryptor.decrypt(session=session)
     except InvalidTokenError:
         raise InvalidTokenException(
             'Forbidden: session is not valid',
@@ -81,7 +83,7 @@ async def tokens_required(
                 'access_token': new_tokens['access_token'],
                 'refresh_token': new_tokens['refresh_token'],
             }
-            encrypted_tokens = session_validator.encrypt(selected_tokens)
+            encrypted_tokens = session_encryptor.encrypt(data=selected_tokens)
             response.set_cookie(
                 key=COOKIE_NAME,
                 value=encrypted_tokens,
@@ -126,7 +128,7 @@ def authorize(request: Request) -> RedirectResponse:
         'access_token': tokens['access_token'],
         'refresh_token': tokens['refresh_token'],
     }
-    encrypted_tokens = session_validator.encrypt(selected_tokens)
+    encrypted_tokens = session_encryptor.encrypt(data=selected_tokens)
 
     # TODO optional: redirect user to originally requested url
     response = RedirectResponse(url=request.url_for('index'), status_code=302)
@@ -158,7 +160,7 @@ async def index(request: Request):
 
     tokens = None
     if encrypted_tokens:
-        tokens = session_validator.decrypt(encrypted_tokens)
+        tokens = session_encryptor.decrypt(session=encrypted_tokens)
         tokens = json.dumps(tokens, sort_keys=True, indent=4)
 
     return templates.TemplateResponse(

@@ -3,8 +3,7 @@ from jwcrypto import jwk
 from jwcrypto.jwt import JWException, JWTExpired
 from keycloak import KeycloakOpenID, KeycloakPostError
 from keycloak.exceptions import KeycloakConnectionError
-from cryptography.fernet import Fernet
-import json
+
 
 from api.services.exceptions import (
     AccessTokenExpiredError,
@@ -18,32 +17,6 @@ OAUTH_CLIENT_ID = config('OAUTH_CLIENT_ID')
 OAUTH_SECRET_KEY = config('OAUTH_SECRET_KEY')
 OAUTH_REALM_URL = f'{OAUTH_SERVER_URL}/realms/{OAUTH_REALM_NAME}'
 
-
-class SessionValidator:
-    def __init__(self, fernet_key: str):
-        self.fernet = Fernet('zGFEFZ7NvB4qWoZfs62EoDpzCjK3MV9cH7V4bJ0zP-E=')
-
-    def encrypt(self, data: dict) -> str:
-        try:
-            # Convert the dictionary to a JSON string
-            json_data: str = json.dumps(data)
-            # Encrypt the JSON string
-            encrypted_data: bytes = self.fernet.encrypt(json_data.encode())
-        except Exception as e:
-            raise InvalidTokenError(e)
-        else:
-            return encrypted_data.decode()
-
-    def decrypt(self, encrypted_data: str) -> dict:
-        try:
-            # Decrypt the encrypted data
-            decrypted_data: bytes = self.fernet.decrypt(encrypted_data.encode())
-            # Convert the JSON string back to a dictionary
-            json_data: dict = json.loads(decrypted_data.decode())
-        except Exception as e:
-            raise InvalidTokenError(e)
-        else:
-            return json_data
 
 class KeycloakTokenValidator:
     def __init__(self):

@@ -1,10 +1,11 @@
 from decouple import config
-from fastapi import Depends, FastAPI, HTTPException, Request
+import json
+from fastapi import Depends, FastAPI, HTTPException, Request, Response
 from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
 
 from api.infrastructure.authentication import (
-    KeycloakTokenValidator,
+    KeycloakTokenValidator, SessionValidator,
 )
 from api.services.exceptions import (
     AccessTokenExpiredError,
@@ -12,7 +13,7 @@ from api.services.exceptions import (
     RefreshTokenExpiredError,
     InvalidTokenException,
 )
-from starlette.middleware.sessions import SessionMiddleware
+from fastapi.security import APIKeyCookie
 
 
 COOKIE_NAME = config('COOKIE_NAME', default='my-ride', cast=str)
@@ -21,14 +22,8 @@ DEBUG = config('DEBUG', default=False, cast=bool)
 
 
 app = FastAPI(debug=DEBUG)
-
-app.add_middleware(
-    SessionMiddleware,
-    secret_key=SECRET_KEY,
-    session_cookie=COOKIE_NAME,
-    https_only=True,
-    max_age=1800,  # Same as max age for refresh token in Keycloak
-)
+cookie_sec = APIKeyCookie(name=COOKIE_NAME, auto_error=False)
+session_validator = SessionValidator(fernet_key=config('SECRET_KEY'))
 
 
 templates = Jinja2Templates(directory="api/templates")
@@ -40,26 +35,32 @@ async def exception_handler(
     request: Request,
     exc: InvalidTokenException,
 ) -> None:
-    request.session.clear()
     raise HTTPException(
         detail=str(exc),
         status_code=exc.status_code,
+        headers={'set-cookie': f'{COOKIE_NAME}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT'},
     )
 
 
-async def session_required(request: Request):
-    if not (request.session or COOKIE_NAME in request.session):
+async def session_required(session: str = Depends(cookie_sec)) -> dict:
+    if not session:
         raise InvalidTokenException(
-            'Unauthorized: session is not valid',
+            'Unauthorized: missing session information',
             status_code=401,
         )
-    return request.session.get(COOKIE_NAME)
+    try:
+        return session_validator.decrypt(session)
+    except InvalidTokenError:
+        raise InvalidTokenException(
+            'Forbidden: session is not valid',
+            status_code=403
+            ,)
 
 
 async def tokens_required(
-    request: Request,
+    response: Response,
     tokens: dict = Depends(session_required),
-):
+) -> dict:
     try:
         keycloak_validator.authenticate_token(
             access_token=tokens['access_token'],
@@ -80,7 +81,15 @@ async def tokens_required(
                 'access_token': new_tokens['access_token'],
                 'refresh_token': new_tokens['refresh_token'],
             }
-            request.session[COOKIE_NAME] = selected_tokens
+            encrypted_tokens = session_validator.encrypt(selected_tokens)
+            response.set_cookie(
+                key=COOKIE_NAME,
+                value=encrypted_tokens,
+                secure=True,
+                httponly=True,
+                max_age=new_tokens['refresh_expires_in'],
+            )
+
             return selected_tokens
         except RefreshTokenExpiredError:
             raise InvalidTokenException(
@@ -117,25 +126,40 @@ def authorize(request: Request) -> RedirectResponse:
         'access_token': tokens['access_token'],
         'refresh_token': tokens['refresh_token'],
     }
-
-    request.session[COOKIE_NAME] = selected_tokens
+    encrypted_tokens = session_validator.encrypt(selected_tokens)
 
     # TODO optional: redirect user to originally requested url
-    return RedirectResponse(url=request.url_for('index'), status_code=302)
+    response = RedirectResponse(url=request.url_for('index'), status_code=302)
+    response.set_cookie(
+        key=COOKIE_NAME,
+        value=encrypted_tokens,
+        secure=True,
+        httponly=True,
+        max_age=tokens['refresh_expires_in'],
+    )
+
+    return response
+
 
 
 @app.get('/logout')
-def logout(request: Request, tokens=Depends(tokens_required)):
+def logout(tokens: dict = Depends(tokens_required)):
     keycloak_validator.logout(refresh_token=tokens['refresh_token'])
 
-    request.session.clear()
+    response = RedirectResponse(url=app.url_path_for('index'), status_code=302)
+    response.delete_cookie(key=COOKIE_NAME)
 
-    return RedirectResponse(url=request.url_for('index'), status_code=302)
+    return response
 
 
 @app.get('/')
 async def index(request: Request):
-    tokens = request.session.get(COOKIE_NAME, {})
+    encrypted_tokens = request.cookies.get(COOKIE_NAME)
+
+    tokens = None
+    if encrypted_tokens:
+        tokens = session_validator.decrypt(encrypted_tokens)
+        tokens = json.dumps(tokens, sort_keys=True, indent=4)
 
     return templates.TemplateResponse(
         'index.html', {'request': request, 'data': tokens}
@@ -143,6 +167,6 @@ async def index(request: Request):
 
 
 @app.get('/rides')
-async def rides(tokens=Depends(tokens_required)):
+async def rides(tokens: dict = Depends(tokens_required)):
     # Send request to Rides microservice
     return tokens

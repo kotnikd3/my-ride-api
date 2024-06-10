@@ -5,7 +5,6 @@ API build in Python
 # Keycloak setup
 Add the following routes under `Clients/my-ride-api/Settings/Valid redirect URIs`:
 - http[s]://<API URL>/authorize
-- http[s]://<API URL>/authorize?next=/protected
 
 Add the mapper for audience `my-ride-api` to the client.
 
@@ -87,3 +86,7 @@ the same as some Cloud Run instance).
 ```shell
 gcloud builds triggers run <trigger name> --branch=<branch>
 ```
+
+
+## TODO
+- optional: redirect user to originally requested url

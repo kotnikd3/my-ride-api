@@ -8,3 +8,10 @@ class RefreshTokenExpiredError(Exception):
 
 class InvalidTokenError(Exception):
     pass
+
+
+class InvalidTokenException(Exception):
+    def __init__(self, message, status_code=None):
+        # Call the base class constructor with the parameters it needs
+        super().__init__(message)
+        self.status_code = status_code

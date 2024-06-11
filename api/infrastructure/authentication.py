@@ -4,7 +4,6 @@ from jwcrypto.jwt import JWException, JWTExpired
 from keycloak import KeycloakOpenID, KeycloakPostError
 from keycloak.exceptions import KeycloakConnectionError
 
-
 from api.services.exceptions import (
     AccessTokenExpiredError,
     InvalidTokenError,

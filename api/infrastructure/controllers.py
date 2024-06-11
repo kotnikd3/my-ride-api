@@ -1,22 +1,19 @@
-from decouple import config
 import json
+
+from decouple import config
 from fastapi import Depends, FastAPI, HTTPException, Request, Response
 from fastapi.responses import RedirectResponse
+from fastapi.security import APIKeyCookie
 from fastapi.templating import Jinja2Templates
 
-from api.infrastructure.authentication import (
-    KeycloakTokenValidator,
-)
+from api.infrastructure.authentication import KeycloakTokenValidator
 from api.services.encryption import SessionEncryptor
-
 from api.services.exceptions import (
     AccessTokenExpiredError,
     InvalidTokenError,
-    RefreshTokenExpiredError,
     InvalidTokenException,
+    RefreshTokenExpiredError,
 )
-from fastapi.security import APIKeyCookie
-
 
 COOKIE_NAME = config('COOKIE_NAME', default='my-ride', cast=str)
 SECRET_KEY = config('SECRET_KEY', default='SL0m0IqlK0O8', cast=str)
@@ -24,12 +21,10 @@ DEBUG = config('DEBUG', default=False, cast=bool)
 
 
 app = FastAPI(debug=DEBUG)
-cookie_sec = APIKeyCookie(name=COOKIE_NAME, auto_error=False)
-session_encryptor = SessionEncryptor(fernet_key=config('SECRET_KEY'))
-
-
 templates = Jinja2Templates(directory="api/templates")
+
 keycloak_validator = KeycloakTokenValidator()
+session_encryptor = SessionEncryptor(fernet_key=SECRET_KEY)
 
 
 @app.exception_handler(InvalidTokenException)
@@ -37,14 +32,19 @@ async def exception_handler(
     request: Request,
     exc: InvalidTokenException,
 ) -> None:
+    delete_cookie = (
+        f'{COOKIE_NAME}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT'
+    )
     raise HTTPException(
         detail=str(exc),
         status_code=exc.status_code,
-        headers={'set-cookie': f'{COOKIE_NAME}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT'},
+        headers={'set-cookie': delete_cookie},
     )
 
 
-async def session_required(session: str = Depends(cookie_sec)) -> dict:
+async def session_required(
+    session: str = Depends(APIKeyCookie(name=COOKIE_NAME, auto_error=False))
+) -> dict:
     if not session:
         raise InvalidTokenException(
             'Unauthorized: missing session information',
@@ -55,8 +55,8 @@ async def session_required(session: str = Depends(cookie_sec)) -> dict:
     except InvalidTokenError:
         raise InvalidTokenException(
             'Forbidden: session is not valid',
-            status_code=403
-            ,)
+            status_code=403,
+        )
 
 
 async def tokens_required(
@@ -83,10 +83,10 @@ async def tokens_required(
                 'access_token': new_tokens['access_token'],
                 'refresh_token': new_tokens['refresh_token'],
             }
-            encrypted_tokens = session_encryptor.encrypt(data=selected_tokens)
+            encrypted_session = session_encryptor.encrypt(data=selected_tokens)
             response.set_cookie(
                 key=COOKIE_NAME,
-                value=encrypted_tokens,
+                value=encrypted_session,
                 secure=True,
                 httponly=True,
                 max_age=new_tokens['refresh_expires_in'],
@@ -128,20 +128,19 @@ def authorize(request: Request) -> RedirectResponse:
         'access_token': tokens['access_token'],
         'refresh_token': tokens['refresh_token'],
     }
-    encrypted_tokens = session_encryptor.encrypt(data=selected_tokens)
+    encrypted_session = session_encryptor.encrypt(data=selected_tokens)
 
     # TODO optional: redirect user to originally requested url
     response = RedirectResponse(url=request.url_for('index'), status_code=302)
     response.set_cookie(
         key=COOKIE_NAME,
-        value=encrypted_tokens,
+        value=encrypted_session,
         secure=True,
         httponly=True,
         max_age=tokens['refresh_expires_in'],
     )
 
     return response
-
 
 
 @app.get('/logout')
@@ -156,11 +155,11 @@ def logout(tokens: dict = Depends(tokens_required)):
 
 @app.get('/')
 async def index(request: Request):
-    encrypted_tokens = request.cookies.get(COOKIE_NAME)
+    encrypted_session = request.cookies.get(COOKIE_NAME)
 
     tokens = None
-    if encrypted_tokens:
-        tokens = session_encryptor.decrypt(session=encrypted_tokens)
+    if encrypted_session:
+        tokens = session_encryptor.decrypt(session=encrypted_session)
         tokens = json.dumps(tokens, sort_keys=True, indent=4)
 
     return templates.TemplateResponse(

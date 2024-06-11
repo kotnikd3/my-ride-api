@@ -1,4 +1,5 @@
 from unittest import TestCase
+
 from api.services.encryption import SessionEncryptor
 from api.services.exceptions import InvalidTokenError
 

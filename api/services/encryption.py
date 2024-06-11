@@ -1,5 +1,7 @@
 import json
+
 from cryptography.fernet import Fernet
+
 from api.services.exceptions import InvalidTokenError
 
 

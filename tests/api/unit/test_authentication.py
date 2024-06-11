@@ -1,9 +1,19 @@
-from jwcrypto import jwk, jwt
 from unittest import TestCase
-from api.infrastructure.authentication import KeycloakTokenValidator, OAUTH_CLIENT_ID, OAUTH_REALM_URL
-from api.services.exceptions import InvalidTokenError, AccessTokenExpiredError, RefreshTokenExpiredError
 from unittest.mock import patch
+
+from jwcrypto import jwk, jwt
 from keycloak import KeycloakOpenID, KeycloakPostError
+
+from api.infrastructure.authentication import (
+    OAUTH_CLIENT_ID,
+    OAUTH_REALM_URL,
+    KeycloakTokenValidator,
+)
+from api.services.exceptions import (
+    AccessTokenExpiredError,
+    InvalidTokenError,
+    RefreshTokenExpiredError,
+)
 
 
 class TestKeycloakTokenValidator(TestCase):
@@ -127,7 +137,7 @@ class TestKeycloakTokenValidator(TestCase):
 
     @patch.object(KeycloakOpenID, 'refresh_token')
     def test_fetch_new_tokens_failure(self, mock_keycloak_refresh_token):
-        # Mock the keycloak instance and its refresh_token method to raise an error
+        # Mock the keycloak instance and refresh_token method to raise an error
         mock_keycloak_refresh_token.side_effect = KeycloakPostError(
             'Invalid refresh token',
         )

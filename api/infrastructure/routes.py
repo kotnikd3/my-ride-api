@@ -102,6 +102,7 @@ def authorize(request: Request) -> RedirectResponse:
     code = request.query_params.get('code')
     redirect_uri = str(request.url_for('authorize'))
 
+    # TODO keycloak not reachable
     # Exchange the authorization code for a token
     tokens = keycloak_validator.get_tokens(
         code=code,
@@ -114,7 +115,7 @@ def authorize(request: Request) -> RedirectResponse:
     }
     encrypted_session = session_encryptor.encrypt(data=selected_tokens)
 
-    # TODO optional: redirect user to originally requested url
+    # TODO optional
     response = RedirectResponse(url=request.url_for('index'), status_code=302)
     response.set_cookie(
         key=COOKIE_NAME,

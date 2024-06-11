@@ -4,11 +4,14 @@ from fastapi import FastAPI, HTTPException, Request
 from api.infrastructure.routes import COOKIE_NAME, api_router
 from api.services.exceptions import InvalidTokenException
 
-DEBUG = config('DEBUG', default=False, cast=bool)
+# TODO dependency
+from rides.infrastructure.routes import rides_router
 
+DEBUG = config('DEBUG', default=False, cast=bool)
 
 app = FastAPI(debug=DEBUG)
 app.include_router(api_router)
+app.include_router(rides_router)
 
 
 @app.exception_handler(InvalidTokenException)

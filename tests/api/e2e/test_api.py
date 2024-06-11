@@ -1,10 +1,15 @@
 import json
 from unittest import TestCase
+from unittest.mock import patch
 
 from fastapi.testclient import TestClient
 from jwcrypto import jwk, jwt
 
-from api.infrastructure.authentication import OAUTH_CLIENT_ID, OAUTH_REALM_URL
+from api.infrastructure.authentication import (
+    OAUTH_CLIENT_ID,
+    OAUTH_REALM_URL,
+    KeycloakTokenValidator,
+)
 from api.infrastructure.controllers import (
     COOKIE_NAME,
     app,
@@ -86,3 +91,35 @@ class TestControllerAsProxy(TestCase):
         self.assertEqual(data, tokens)
         self.assertEqual(signed_token, access_token)
         self.assertEqual(claims, token_payload)
+
+    @patch.object(KeycloakTokenValidator, 'fetch_new_tokens')
+    def test_rides_fetch_new_tokens(self, mock_keycloak_fetch_new_tokens):
+        new_token_payload = {
+            'access_token': 'new_access_token',
+            'refresh_token': 'new_refresh_token',
+            'refresh_expires_in': None,
+        }
+        mock_keycloak_fetch_new_tokens.return_value = new_token_payload
+
+        token_payload = {
+            'exp': 1000000000,  # Expired
+            'jti': 'The unique identifier for this token',
+            'aud': OAUTH_CLIENT_ID,
+            'iss': OAUTH_REALM_URL,
+            'some': 'payload',
+        }
+        signed_token = self._get_signed_token(payload=token_payload)
+        data = {
+            'access_token': signed_token,
+            'refresh_token': signed_token,
+        }
+        encrypted_token = self.session_encryptor.encrypt(data=data)
+
+        response = self.client.get(
+            '/rides',
+            cookies={COOKIE_NAME: encrypted_token},
+        )
+        tokens = json.loads(response.content.decode())
+        access_token = tokens['access_token']
+
+        self.assertEqual(new_token_payload['access_token'], access_token)

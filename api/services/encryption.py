@@ -1,13 +1,20 @@
 import json
 
 from cryptography.fernet import Fernet
+from decouple import config
 
 from api.services.exceptions import InvalidTokenError
 
+FERNET_KEY = config(
+    'FERNET_KEY',
+    default='zGFEFZ7NvB4qWoZfs62EoDpzCjK3MV9cH7V4bJ0zP-E=',
+    cast=str,
+)
+
 
 class SessionEncryptor:
-    def __init__(self, fernet_key: str):
-        self.fernet = Fernet(fernet_key)
+    def __init__(self):
+        self.fernet = Fernet(FERNET_KEY)
 
     def encrypt(self, data: dict) -> str:
         if not isinstance(data, dict):

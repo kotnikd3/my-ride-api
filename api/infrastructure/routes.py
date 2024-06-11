@@ -1,7 +1,7 @@
 import json
 
 from decouple import config
-from fastapi import Depends, FastAPI, HTTPException, Request, Response
+from fastapi import APIRouter, Depends, Request, Response
 from fastapi.responses import RedirectResponse
 from fastapi.security import APIKeyCookie
 from fastapi.templating import Jinja2Templates
@@ -16,30 +16,14 @@ from api.services.exceptions import (
 )
 
 COOKIE_NAME = config('COOKIE_NAME', default='my-ride', cast=str)
-SECRET_KEY = config('SECRET_KEY', default='SL0m0IqlK0O8', cast=str)
-DEBUG = config('DEBUG', default=False, cast=bool)
 
 
-app = FastAPI(debug=DEBUG)
-templates = Jinja2Templates(directory="api/templates")
+api_router = APIRouter()
 
 keycloak_validator = KeycloakTokenValidator()
-session_encryptor = SessionEncryptor(fernet_key=SECRET_KEY)
+session_encryptor = SessionEncryptor()
 
-
-@app.exception_handler(InvalidTokenException)
-async def exception_handler(
-    request: Request,
-    exc: InvalidTokenException,
-) -> None:
-    delete_cookie = (
-        f'{COOKIE_NAME}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT'
-    )
-    raise HTTPException(
-        detail=str(exc),
-        status_code=exc.status_code,
-        headers={'set-cookie': delete_cookie},
-    )
+templates = Jinja2Templates(directory="api/templates")
 
 
 async def session_required(
@@ -100,7 +84,7 @@ async def tokens_required(
             )
 
 
-@app.get('/login')
+@api_router.get('/login')
 def login(request: Request) -> RedirectResponse:
     redirect_uri = str(request.url_for('authorize'))
 
@@ -112,7 +96,7 @@ def login(request: Request) -> RedirectResponse:
     return RedirectResponse(url=auth_url)
 
 
-@app.get('/authorize')
+@api_router.get('/authorize')
 def authorize(request: Request) -> RedirectResponse:
     # Get the authorization code from the callback URL
     code = request.query_params.get('code')
@@ -143,17 +127,19 @@ def authorize(request: Request) -> RedirectResponse:
     return response
 
 
-@app.get('/logout')
+@api_router.get('/logout')
 def logout(tokens: dict = Depends(tokens_required)):
     keycloak_validator.logout(refresh_token=tokens['refresh_token'])
 
-    response = RedirectResponse(url=app.url_path_for('index'), status_code=302)
+    response = RedirectResponse(
+        url=api_router.url_path_for('index'), status_code=302
+    )
     response.delete_cookie(key=COOKIE_NAME)
 
     return response
 
 
-@app.get('/')
+@api_router.get('/')
 async def index(request: Request):
     encrypted_session = request.cookies.get(COOKIE_NAME)
 
@@ -167,7 +153,7 @@ async def index(request: Request):
     )
 
 
-@app.get('/rides')
+@api_router.get('/rides')
 async def rides(tokens: dict = Depends(tokens_required)):
     # Send request to Rides microservice
     return tokens

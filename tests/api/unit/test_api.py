@@ -5,12 +5,12 @@ from fastapi import Response
 from fastapi.testclient import TestClient
 
 from api.infrastructure.authentication import KeycloakTokenValidator
-from api.infrastructure.controllers import (
+from api.infrastructure.routes import (
     COOKIE_NAME,
-    app,
     session_required,
     tokens_required,
 )
+from api.infrastructure.servers import app
 from api.services.encryption import SessionEncryptor
 from api.services.exceptions import (
     AccessTokenExpiredError,

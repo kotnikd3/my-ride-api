@@ -10,12 +10,12 @@ from api.infrastructure.authentication import (
     OAUTH_REALM_URL,
     KeycloakTokenValidator,
 )
-from api.infrastructure.controllers import (
+from api.infrastructure.routes import (
     COOKIE_NAME,
-    app,
     keycloak_validator,
     session_encryptor,
 )
+from api.infrastructure.servers import app
 
 
 class TestControllerAsProxy(TestCase):

@@ -7,9 +7,7 @@ from api.services.exceptions import InvalidTokenError
 class TestSessionEncryptor(TestCase):
     @classmethod
     def setUpClass(cls) -> None:
-        cls.session_encryptor = SessionEncryptor(
-            fernet_key='zGFEFZ7NvB4qWoZfs62EoDpzCjK3MV9cH7V4bJ0zP-E='
-        )
+        cls.session_encryptor = SessionEncryptor()
 
     @classmethod
     def tearDownClass(cls) -> None:

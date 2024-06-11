@@ -4,7 +4,7 @@ from api.services.encryption import SessionEncryptor
 from api.services.exceptions import InvalidTokenError
 
 
-class TestKeycloakTokenValidator(TestCase):
+class TestSessionEncryptor(TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         cls.session_encryptor = SessionEncryptor(

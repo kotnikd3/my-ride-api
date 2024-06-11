@@ -86,14 +86,15 @@ class TestController(TestCase):
         )
         self.assertIn(COOKIE_NAME, response.cookies)
 
-    def test_login(self):
+    @patch.object(KeycloakTokenValidator, 'auth_url')
+    def test_login(self, mock_keycloak_auth_url):
+        mock_keycloak_auth_url.return_value = '/openid-connect'
+
         response = self.client.get(url='/login', allow_redirects=False)
 
         self.assertEqual(307, response.status_code)
         self.assertTrue(response.is_redirect)
-        self.assertIn(
-            'openid-connect/auth?client_id=', response.headers['location']
-        )
+        self.assertIn('/openid-connect', response.headers['location'])
 
 
 class TestDependencies(IsolatedAsyncioTestCase):

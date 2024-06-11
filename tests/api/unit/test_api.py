@@ -104,16 +104,16 @@ class TestDependencies(IsolatedAsyncioTestCase):
         session = await session_required('encrypted_string')
         self.assertEqual(session, mocked_tokens())
 
-    async def test_session_required_unauthorized_exception(self):
+    async def test_session_required_missing_session(self):
         with self.assertRaises(InvalidTokenException) as context:
-            await session_required(None)
+            await session_required(None)  # Missing session
 
         self.assertIn(
             'Unauthorized: missing session information', str(context.exception)
         )
         self.assertEqual(401, context.exception.status_code)
 
-    async def test_session_required_forbidden_exception(self):
+    async def test_session_required_session_not_valid(self):
         with self.assertRaises(InvalidTokenException) as context:
             await session_required('something')
 
@@ -126,21 +126,6 @@ class TestDependencies(IsolatedAsyncioTestCase):
 
         tokens = await tokens_required(Response(), mocked_tokens())
         self.assertEqual(tokens, mocked_tokens())
-
-    @patch.object(KeycloakTokenValidator, 'authenticate_token')
-    async def test_tokens_required_invalid_token_exception_forbidden(
-        self,
-        mock_keycloak_authenticate_token,
-    ):
-        mock_keycloak_authenticate_token.side_effect = InvalidTokenError
-
-        with self.assertRaises(InvalidTokenException) as context:
-            await tokens_required(Response(), mocked_tokens())
-
-        self.assertIn(
-            'Forbidden: access token is not valid', str(context.exception)
-        )
-        self.assertEqual(403, context.exception.status_code)
 
     @patch.object(KeycloakTokenValidator, 'fetch_new_tokens')
     @patch.object(KeycloakTokenValidator, 'authenticate_token')
@@ -162,9 +147,24 @@ class TestDependencies(IsolatedAsyncioTestCase):
         self.assertIn(COOKIE_NAME, response.headers['set-cookie'])
         self.assertEqual(expected_tokens, new_tokens)
 
+    @patch.object(KeycloakTokenValidator, 'authenticate_token')
+    async def test_tokens_required_not_valid_access_token(
+        self,
+        mock_keycloak_authenticate_token,
+    ):
+        mock_keycloak_authenticate_token.side_effect = InvalidTokenError
+
+        with self.assertRaises(InvalidTokenException) as context:
+            await tokens_required(Response(), mocked_tokens())
+
+        self.assertIn(
+            'Forbidden: access token is not valid', str(context.exception)
+        )
+        self.assertEqual(403, context.exception.status_code)
+
     @patch.object(KeycloakTokenValidator, 'fetch_new_tokens')
     @patch.object(KeycloakTokenValidator, 'authenticate_token')
-    async def test_tokens_required_invalid_token_exception_refresh_token(
+    async def test_tokens_required_refresh_token_expired(
         self,
         mock_keycloak_authenticate_token,
         mock_keycloak_fetch_new_tokens,

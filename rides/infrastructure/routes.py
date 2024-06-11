@@ -1,12 +1,9 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter
 
-# TODO Dependency
-from api.infrastructure.routes import tokens_required
-
-rides_router = APIRouter(prefix='/proxy', tags=['proxy'])
+rides_router = APIRouter(prefix='/rides', tags=['rides'])
 
 
 @rides_router.get('')
-async def rides(tokens: dict = Depends(tokens_required)):
+async def rides():
     # Send request to Rides microservice
-    return tokens
+    return {'id': 123}

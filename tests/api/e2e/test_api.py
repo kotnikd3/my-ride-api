@@ -54,9 +54,9 @@ class TestControllerAsProxy(TestCase):
     def tearDown(self) -> None:
         app.dependency_overrides = {}
 
-    def test_rides_without_session(self):
+    def test_proxy_without_session(self):
         # with self.assertRaises(HTTPException) as context:
-        response = self.client.get('/rides')
+        response = self.client.get('/proxy/')
 
         self.assertIn(
             'Unauthorized: missing session information',
@@ -65,7 +65,7 @@ class TestControllerAsProxy(TestCase):
         self.assertEqual(401, response.status_code)
         self.assertNotIn(COOKIE_NAME, response.cookies)
 
-    def test_rides(self):
+    def test_proxy(self):
         token_payload = {
             'exp': 9999999999,  # Max date
             'jti': 'The unique identifier for this token',
@@ -81,7 +81,7 @@ class TestControllerAsProxy(TestCase):
         encrypted_token = self.session_encryptor.encrypt(data=data)
 
         response = self.client.get(
-            '/rides',
+            '/proxy/',
             cookies={COOKIE_NAME: encrypted_token},
         )
         tokens = json.loads(response.content.decode())
@@ -93,7 +93,7 @@ class TestControllerAsProxy(TestCase):
         self.assertEqual(claims, token_payload)
 
     @patch.object(KeycloakTokenValidator, 'fetch_new_tokens')
-    def test_rides_fetch_new_tokens(self, mock_keycloak_fetch_new_tokens):
+    def test_proxy_fetch_new_tokens(self, mock_keycloak_fetch_new_tokens):
         new_token_payload = {
             'access_token': 'new_access_token',
             'refresh_token': 'new_refresh_token',
@@ -116,7 +116,7 @@ class TestControllerAsProxy(TestCase):
         encrypted_token = self.session_encryptor.encrypt(data=data)
 
         response = self.client.get(
-            '/rides',
+            '/proxy/',
             cookies={COOKIE_NAME: encrypted_token},
         )
         tokens = json.loads(response.content.decode())

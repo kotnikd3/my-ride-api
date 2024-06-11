@@ -154,7 +154,7 @@ async def index(request: Request):
     )
 
 
-@api_router.get('/rides')
-async def rides(tokens: dict = Depends(tokens_required)):
+@api_router.get('/proxy/{path:path}')
+async def proxy(path: str, tokens: dict = Depends(tokens_required)):
     # Send request to Rides microservice
     return tokens

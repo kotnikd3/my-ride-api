@@ -162,9 +162,7 @@ async def index(request: Request):
         tokens = session_encryptor.decrypt(session=encrypted_session)
         tokens = json.dumps(tokens, sort_keys=True, indent=4)
 
-    return templates.TemplateResponse(
-        'index.html', {'request': request, 'data': tokens}
-    )
+    return templates.TemplateResponse(request, 'index.html', {'data': tokens})
 
 
 @api_router.get('/proxy/{path:path}')

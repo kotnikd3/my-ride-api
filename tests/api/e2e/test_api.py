@@ -80,10 +80,9 @@ class TestControllerAsProxy(TestCase):
         }
         encrypted_token = self.session_encryptor.encrypt(data=data)
 
-        response = self.client.get(
-            '/proxy/',
-            cookies={COOKIE_NAME: encrypted_token},
-        )
+        self.client.cookies[COOKIE_NAME] = encrypted_token
+        response = self.client.get('/proxy/')
+
         tokens = json.loads(response.content.decode())
         access_token = tokens['access_token']
         claims = self.validator.authenticate_token(access_token)
@@ -115,10 +114,9 @@ class TestControllerAsProxy(TestCase):
         }
         encrypted_token = self.session_encryptor.encrypt(data=data)
 
-        response = self.client.get(
-            '/proxy/',
-            cookies={COOKIE_NAME: encrypted_token},
-        )
+        self.client.cookies[COOKIE_NAME] = encrypted_token
+        response = self.client.get('/proxy/')
+
         tokens = json.loads(response.content.decode())
         access_token = tokens['access_token']
 

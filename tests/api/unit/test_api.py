@@ -45,7 +45,8 @@ class TestController(TestCase):
     def test_index_with_cookie(self, mock_decrypt):
         mock_decrypt.return_value = mocked_tokens()
 
-        response = self.client.get('/', cookies={COOKIE_NAME: 'mocked'})
+        self.client.cookies[COOKIE_NAME] = 'mocked'
+        response = self.client.get('/')
 
         self.assertEqual(200, response.status_code)
         self.assertIn('My ride', response.text)
@@ -56,11 +57,8 @@ class TestController(TestCase):
         mock_keycloak_logout.return_value = None
         app.dependency_overrides[tokens_required] = mocked_tokens
 
-        response = self.client.get(
-            '/logout',
-            cookies={COOKIE_NAME: 'mocked'},
-            follow_redirects=False,
-        )
+        self.client.cookies[COOKIE_NAME] = 'mocked'
+        response = self.client.get('/logout', follow_redirects=False)
 
         self.assertEqual(302, response.status_code)
         self.assertTrue(response.is_redirect)
@@ -76,7 +74,7 @@ class TestController(TestCase):
         response = self.client.get(
             url='/authorize',
             params={'code': 'some_code'},
-            allow_redirects=False,
+            follow_redirects=False,
         )
 
         self.assertEqual(302, response.status_code)
@@ -90,7 +88,7 @@ class TestController(TestCase):
     def test_login(self, mock_keycloak_auth_url):
         mock_keycloak_auth_url.return_value = '/openid-connect'
 
-        response = self.client.get(url='/login', allow_redirects=False)
+        response = self.client.get(url='/login', follow_redirects=False)
 
         self.assertEqual(307, response.status_code)
         self.assertTrue(response.is_redirect)

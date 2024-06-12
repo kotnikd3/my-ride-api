@@ -56,7 +56,7 @@ async def get_user(
     return User(
         email=claims['email'],
         preferred_username=claims['preferred_username'],
-        sub=claims['sub'],
+        id=claims['sub'],
     )
 
 

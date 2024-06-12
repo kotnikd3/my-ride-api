@@ -5,4 +5,4 @@ from dataclasses import dataclass
 class User:
     email: str
     preferred_username: str
-    sub: str  # Keycloak ID
+    id: str  # Keycloak ID

@@ -67,6 +67,8 @@ class KeycloakTokenValidator:
             raise AccessTokenExpiredError(repr(error))
         except JWException as error:
             raise InvalidTokenError(repr(error))
+        except ValueError as error:
+            raise InvalidTokenError(repr(error))
         else:
             return claims
 

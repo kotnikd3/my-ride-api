@@ -1,27 +1,55 @@
-from fastapi import APIRouter, Depends, FastAPI
-from fastapi.security import APIKeyHeader, OAuth2PasswordBearer
+from typing import Annotated
 
-app = FastAPI()
+from fastapi import APIRouter, Depends
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl='token')
+from rides.infrastructure.authentication import KeycloakTokenValidatorProxy
+from rides.services.exceptions import (
+    AccessTokenExpiredError,
+    InvalidTokenError,
+    InvalidTokenException,
+    KeycloakNotReachableError,
+    ServiceUnreachableException,
+)
+
+http_bearer_token = HTTPBearer()
 
 
 rides_router = APIRouter(
     prefix='/rides',
     tags=['rides'],
-    dependencies=[Depends(oauth2_scheme)],
 )
+
+keycloak_validator = KeycloakTokenValidatorProxy()
+
+
+async def decode_access_token(
+    credentials: Annotated[
+        HTTPAuthorizationCredentials, Depends(http_bearer_token)
+    ]
+) -> dict:
+    access_token = credentials.credentials
+
+    try:
+        claims = keycloak_validator.authenticate_token(
+            access_token=access_token,
+        )
+        return claims
+    except InvalidTokenError:
+        raise InvalidTokenException(
+            'Forbidden: access token is not valid',
+            status_code=403,
+        )
+    except AccessTokenExpiredError:
+        raise InvalidTokenException(
+            'Forbidden: access token expired',
+            status_code=403,
+        )
+    except KeycloakNotReachableError as error:
+        raise ServiceUnreachableException(error)
 
 
 @rides_router.get('')
-async def rides(access_token):
+async def rides(claims: Annotated[dict, Depends(decode_access_token)]):
     # Send request to Rides microservice
-    return {'id': access_token}
-
-
-header_scheme = APIKeyHeader(name='Authorization', auto_error=False)
-
-
-@rides_router.get("/items")
-async def read_items(key: str = Depends(header_scheme)):
-    return {"key": key}
+    return claims

@@ -3,6 +3,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
+from rides.domain.value_objects import User
 from rides.infrastructure.authentication import KeycloakTokenValidatorProxy
 from rides.services.exceptions import (
     AccessTokenExpiredError,
@@ -49,7 +50,17 @@ async def decode_access_token(
         raise ServiceUnreachableException(error)
 
 
+async def get_user(
+    claims: Annotated[dict, Depends(decode_access_token)]
+) -> User:
+    return User(
+        email=claims['email'],
+        preferred_username=claims['preferred_username'],
+        sub=claims['sub'],
+    )
+
+
 @rides_router.get('')
-async def rides(claims: Annotated[dict, Depends(decode_access_token)]):
-    # Send request to Rides microservice
-    return claims
+async def rides(user: Annotated[User, Depends(get_user)]):
+    # Get rides
+    return user

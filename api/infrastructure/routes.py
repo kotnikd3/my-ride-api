@@ -1,4 +1,5 @@
 import json
+from typing import Annotated
 
 from decouple import config
 from fastapi import APIRouter, Depends, Request, Response
@@ -141,7 +142,7 @@ def authorize(request: Request) -> RedirectResponse:
 
 
 @api_router.get('/logout')
-def logout(tokens: dict = Depends(tokens_required)):
+def logout(tokens: Annotated[dict, Depends(tokens_required)]):
     keycloak_validator.logout(refresh_token=tokens['refresh_token'])
 
     response = RedirectResponse(
@@ -167,6 +168,6 @@ async def index(request: Request):
 
 
 @api_router.get('/proxy/{path:path}')
-async def proxy(path: str, tokens: dict = Depends(tokens_required)):
+async def proxy(path: str, tokens: Annotated[dict, Depends(tokens_required)]):
     # Send request to Rides microservice
     return tokens

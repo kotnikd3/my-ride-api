@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from rides.domain.value_objects import User
-from rides.infrastructure.authentication import KeycloakTokenValidatorProxy
+from rides.infrastructure.authentication import KeycloakTokenValidator
 from rides.services.exceptions import (
     AccessTokenExpiredError,
     InvalidTokenError,
@@ -21,7 +21,7 @@ rides_router = APIRouter(
     tags=['rides'],
 )
 
-keycloak_validator = KeycloakTokenValidatorProxy()
+keycloak_validator = KeycloakTokenValidator()
 
 
 async def decode_access_token(

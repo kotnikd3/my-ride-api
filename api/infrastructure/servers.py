@@ -2,7 +2,10 @@ from decouple import config
 from fastapi import FastAPI, HTTPException, Request
 
 from api.infrastructure.routes import COOKIE_NAME, api_router
-from api.services.exceptions import InvalidTokenException
+from api.services.exceptions import (
+    InvalidTokenException,
+    ServiceUnreachableException,
+)
 
 # TODO dependency
 from rides.infrastructure.routes import rides_router
@@ -15,6 +18,7 @@ app.include_router(rides_router)
 
 
 @app.exception_handler(InvalidTokenException)
+@app.exception_handler(ServiceUnreachableException)
 async def exception_handler(
     request: Request,
     exc: InvalidTokenException,

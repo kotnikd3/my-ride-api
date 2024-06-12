@@ -12,7 +12,9 @@ from api.services.exceptions import (
     AccessTokenExpiredError,
     InvalidTokenError,
     InvalidTokenException,
+    KeycloakNotReachableError,
     RefreshTokenExpiredError,
+    ServiceUnreachableException,
 )
 
 COOKIE_NAME = config('COOKIE_NAME', default='my-ride', cast=str)
@@ -82,16 +84,23 @@ async def tokens_required(
                 'Forbidden: refresh token expired',
                 status_code=403,
             )
+        except KeycloakNotReachableError as error:
+            raise ServiceUnreachableException(error)
+    except KeycloakNotReachableError as error:
+        raise ServiceUnreachableException(error)
 
 
 @api_router.get('/login')
 def login(request: Request) -> RedirectResponse:
     redirect_uri = str(request.url_for('authorize'))
 
-    auth_url = keycloak_validator.auth_url(
-        redirect_uri=redirect_uri,
-        scope='openid email',
-    )
+    try:
+        auth_url = keycloak_validator.auth_url(
+            redirect_uri=redirect_uri,
+            scope='openid email',
+        )
+    except KeycloakNotReachableError as error:
+        raise ServiceUnreachableException(error)
 
     return RedirectResponse(url=auth_url)
 
@@ -102,12 +111,15 @@ def authorize(request: Request) -> RedirectResponse:
     code = request.query_params.get('code')
     redirect_uri = str(request.url_for('authorize'))
 
-    # TODO keycloak not reachable
-    # Exchange the authorization code for a token
-    tokens = keycloak_validator.get_tokens(
-        code=code,
-        redirect_uri=redirect_uri,
-    )
+    try:
+        # Exchange the authorization code for a token
+        tokens = keycloak_validator.get_tokens(
+            code=code,
+            redirect_uri=redirect_uri,
+        )
+    except KeycloakNotReachableError as error:
+        raise ServiceUnreachableException(error)
+
     # Save session storage space
     selected_tokens = {
         'access_token': tokens['access_token'],

@@ -7,6 +7,7 @@ from keycloak.exceptions import KeycloakConnectionError
 from api.services.exceptions import (
     AccessTokenExpiredError,
     InvalidTokenError,
+    KeycloakNotReachableError,
     RefreshTokenExpiredError,
 )
 
@@ -47,7 +48,7 @@ class KeycloakTokenValidator:
             # reaching it on every request
             self._set_public_key()
             if self.public_key is None:
-                raise Exception('Connection to Keycloak failed')
+                raise KeycloakNotReachableError('Service Keycloak unavailable')
 
         check_claims = {
             'exp': None,
@@ -70,20 +71,34 @@ class KeycloakTokenValidator:
             return claims
 
     def get_tokens(self, code: str, redirect_uri: str) -> dict:
-        return self.keycloak.token(
-            code=code,
-            grant_type='authorization_code',
-            redirect_uri=redirect_uri,
-        )
+        try:
+            return self.keycloak.token(
+                code=code,
+                grant_type='authorization_code',
+                redirect_uri=redirect_uri,
+            )
+        except KeycloakConnectionError:
+            raise KeycloakNotReachableError('Service Keycloak unavailable')
 
     def logout(self, refresh_token: str) -> None:
-        self.keycloak.logout(refresh_token=refresh_token)
+        try:
+            self.keycloak.logout(refresh_token=refresh_token)
+        except KeycloakConnectionError:
+            pass
 
     def auth_url(self, scope: str, redirect_uri: str) -> str:
-        return self.keycloak.auth_url(scope=scope, redirect_uri=redirect_uri)
+        try:
+            return self.keycloak.auth_url(
+                scope=scope,
+                redirect_uri=redirect_uri,
+            )
+        except KeycloakConnectionError:
+            raise KeycloakNotReachableError('Service Keycloak unavailable')
 
     def fetch_new_tokens(self, refresh_token: str) -> dict:
         try:
             return self.keycloak.refresh_token(refresh_token=refresh_token)
         except KeycloakPostError as error:
             raise RefreshTokenExpiredError(repr(error))
+        except KeycloakConnectionError:
+            raise KeycloakNotReachableError('Service Keycloak unavailable')

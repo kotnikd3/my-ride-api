@@ -90,5 +90,4 @@ gcloud builds triggers run <trigger name> --branch=<branch>
 
 ## TODO
 - optional: redirect user to originally requested url
-- keycloak not reachable: what happens if Keycloak is not reachable?
 - dependency: separate code when decoupling to another microservice

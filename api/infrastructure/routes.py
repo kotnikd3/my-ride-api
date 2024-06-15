@@ -1,6 +1,7 @@
 import json
 from typing import Annotated
 
+import httpx
 from decouple import config
 from fastapi import Depends, FastAPI, HTTPException, Request, Response
 from fastapi.responses import RedirectResponse
@@ -17,8 +18,6 @@ from api.services.exceptions import (
     RefreshTokenExpiredError,
     ServiceUnreachableException,
 )
-import httpx
-
 
 COOKIE_NAME = config('COOKIE_NAME', default='my-ride', cast=str)
 DEBUG = config('DEBUG', default=False, cast=bool)
@@ -183,7 +182,9 @@ async def index(request: Request):
 
 @app.get('/rides/{path:path}')
 async def proxy(path: str, tokens: Annotated[dict, Depends(tokens_required)]):
-    target_url = f'http://rides:8000/rides/{path}' if path else 'http://rides:8000/rides'
+    target_url = (
+        f'http://rides:8000/rides/{path}' if path else 'http://rides:8000/rides'
+    )
     headers = {'Authorization': f'Bearer {tokens['access_token']}'}
 
     # Send request to Rides microservice

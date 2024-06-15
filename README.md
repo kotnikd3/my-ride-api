@@ -75,8 +75,7 @@ using the template **Python tests/pytest**
 ## Automatic deployment
 
 Everytime some branch is merged and pushed to `develop` branch, Cloud Build (Trigger) will build and deploy `develop` 
-branch on `parking-reporting-dev` Cloud Run instance. Everytime some branch is merged and pushed to `accept` branch, 
-Cloud Build (Trigger) will build and deploy `accept` branch on `parking-reporting-accept` Cloud Run instance.
+branch on `my-ride-api-dev` Cloud Run instance.
 
 
 ## Manual deployment
@@ -90,4 +89,3 @@ gcloud builds triggers run <trigger name> --branch=<branch>
 
 ## TODO
 - optional: redirect user to originally requested url
-- dependency: separate code when decoupling to another microservice

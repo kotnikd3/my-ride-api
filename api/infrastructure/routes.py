@@ -2,7 +2,7 @@ import json
 from typing import Annotated
 
 from decouple import config
-from fastapi import APIRouter, Depends, Request, Response
+from fastapi import Depends, FastAPI, HTTPException, Request, Response
 from fastapi.responses import RedirectResponse
 from fastapi.security import APIKeyCookie
 from fastapi.templating import Jinja2Templates
@@ -19,14 +19,30 @@ from api.services.exceptions import (
 )
 
 COOKIE_NAME = config('COOKIE_NAME', default='my-ride', cast=str)
+DEBUG = config('DEBUG', default=False, cast=bool)
 
-
-api_router = APIRouter()
+app = FastAPI(debug=DEBUG)
 
 keycloak_validator = KeycloakTokenValidator()
 session_encryptor = SessionEncryptor()
 
 templates = Jinja2Templates(directory="api/templates")
+
+
+@app.exception_handler(InvalidTokenException)
+@app.exception_handler(ServiceUnreachableException)
+async def exception_handler(
+    request: Request,
+    exc: InvalidTokenException,
+) -> None:
+    delete_cookie = (
+        f'{COOKIE_NAME}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT'
+    )
+    raise HTTPException(
+        detail=str(exc),
+        status_code=exc.status_code,
+        headers={'set-cookie': delete_cookie},
+    )
 
 
 async def session_required(
@@ -91,7 +107,7 @@ async def tokens_required(
         raise ServiceUnreachableException(error)
 
 
-@api_router.get('/login')
+@app.get('/login')
 def login(request: Request) -> RedirectResponse:
     redirect_uri = str(request.url_for('authorize'))
 
@@ -106,7 +122,7 @@ def login(request: Request) -> RedirectResponse:
     return RedirectResponse(url=auth_url)
 
 
-@api_router.get('/authorize')
+@app.get('/authorize')
 def authorize(request: Request) -> RedirectResponse:
     # Get the authorization code from the callback URL
     code = request.query_params.get('code')
@@ -141,19 +157,17 @@ def authorize(request: Request) -> RedirectResponse:
     return response
 
 
-@api_router.get('/logout')
+@app.get('/logout')
 def logout(tokens: Annotated[dict, Depends(tokens_required)]):
     keycloak_validator.logout(refresh_token=tokens['refresh_token'])
 
-    response = RedirectResponse(
-        url=api_router.url_path_for('index'), status_code=302
-    )
+    response = RedirectResponse(url=app.url_path_for('index'), status_code=302)
     response.delete_cookie(key=COOKIE_NAME)
 
     return response
 
 
-@api_router.get('/')
+@app.get('/')
 async def index(request: Request):
     encrypted_session = request.cookies.get(COOKIE_NAME)
 
@@ -165,7 +179,7 @@ async def index(request: Request):
     return templates.TemplateResponse(request, 'index.html', {'data': tokens})
 
 
-@api_router.get('/proxy/{path:path}')
+@app.get('/rides/{path:path}')
 async def proxy(path: str, tokens: Annotated[dict, Depends(tokens_required)]):
     # Send request to Rides microservice
     return tokens

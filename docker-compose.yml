@@ -16,28 +16,9 @@ services:
       - "8003:${PORT:-8000}"
     volumes:
       - .:/app
-    depends_on:
-      - postgres
 # We don't explicitly define the 'entrypoint' because this breaks PyCharm test integration.
 # In prod we should define the entrypoint to limit interaction possibilities of the container.
     command: ["./entrypoint.sh", "local"]
-
-  postgres:
-      networks:
-        - default
-      container_name: my-ride-postgres
-      image: postgres:15-alpine
-      ports:
-        - "5435:5432"
-      environment:
-        - POSTGRES_PASSWORD=rides
-        - POSTGRES_USER=rides
-        - POSTGRES_DB=rides
-      volumes:
-        - postgres-data:/var/lib/postgresql/data
-
-volumes:
-  postgres-data:
 
 networks:
   keycloak:

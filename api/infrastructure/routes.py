@@ -17,6 +17,8 @@ from api.services.exceptions import (
     RefreshTokenExpiredError,
     ServiceUnreachableException,
 )
+import httpx
+
 
 COOKIE_NAME = config('COOKIE_NAME', default='my-ride', cast=str)
 DEBUG = config('DEBUG', default=False, cast=bool)
@@ -181,5 +183,11 @@ async def index(request: Request):
 
 @app.get('/rides/{path:path}')
 async def proxy(path: str, tokens: Annotated[dict, Depends(tokens_required)]):
+    target_url = f'http://rides:8000/rides/{path}' if path else 'http://rides:8000/rides'
+    headers = {'Authorization': f'Bearer {tokens['access_token']}'}
+
     # Send request to Rides microservice
-    return tokens
+    async with httpx.AsyncClient() as client:
+        response = await client.get(target_url, headers=headers)
+
+    return response.json()

@@ -34,7 +34,7 @@ templates = Jinja2Templates(directory="api/templates")
 @app.exception_handler(ServiceUnreachableException)
 async def exception_handler(
     request: Request,
-    exc: InvalidTokenException,
+    exc: InvalidTokenException | ServiceUnreachableException,
 ) -> None:
     delete_cookie = (
         f'{COOKIE_NAME}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT'

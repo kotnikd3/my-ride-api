@@ -1,7 +1,3 @@
-class KeycloakNotReachableError(Exception):
-    pass
-
-
 class AccessTokenExpiredError(Exception):
     pass
 
@@ -21,8 +17,7 @@ class InvalidTokenException(Exception):
         self.status_code = status_code
 
 
-class ServiceUnreachableException(Exception):
+class ServiceUnavailableException(Exception):
     def __init__(self, message):
-        # Call the base class constructor with the parameters it needs
         super().__init__(message)
         self.status_code = 503

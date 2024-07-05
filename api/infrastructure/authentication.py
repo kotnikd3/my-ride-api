@@ -7,8 +7,8 @@ from keycloak.exceptions import KeycloakConnectionError
 from api.services.exceptions import (
     AccessTokenExpiredError,
     InvalidTokenError,
-    KeycloakNotReachableError,
     RefreshTokenExpiredError,
+    ServiceUnavailableException,
 )
 
 OAUTH_SERVER_URL = config('OAUTH_SERVER_URL')
@@ -48,7 +48,9 @@ class KeycloakTokenValidator:
             # reaching it on every request
             self._set_public_key()
             if self.public_key is None:
-                raise KeycloakNotReachableError('Service Keycloak unavailable')
+                raise ServiceUnavailableException(
+                    'Service Keycloak is unavailable'
+                )
 
         check_claims = {
             'exp': None,
@@ -80,7 +82,7 @@ class KeycloakTokenValidator:
                 redirect_uri=redirect_uri,
             )
         except KeycloakConnectionError:
-            raise KeycloakNotReachableError('Service Keycloak unavailable')
+            raise ServiceUnavailableException('Service Keycloak is unavailable')
 
     def logout(self, refresh_token: str) -> None:
         try:
@@ -95,7 +97,7 @@ class KeycloakTokenValidator:
                 redirect_uri=redirect_uri,
             )
         except KeycloakConnectionError:
-            raise KeycloakNotReachableError('Service Keycloak unavailable')
+            raise ServiceUnavailableException('Service Keycloak is unavailable')
 
     def fetch_new_tokens(self, refresh_token: str) -> dict:
         try:
@@ -103,4 +105,4 @@ class KeycloakTokenValidator:
         except KeycloakPostError as error:
             raise RefreshTokenExpiredError(repr(error))
         except KeycloakConnectionError:
-            raise KeycloakNotReachableError('Service Keycloak unavailable')
+            raise ServiceUnavailableException('Service Keycloak is unavailable')

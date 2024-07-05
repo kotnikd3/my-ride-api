@@ -14,9 +14,8 @@ from api.services.exceptions import (
     AccessTokenExpiredError,
     InvalidTokenError,
     InvalidTokenException,
-    KeycloakNotReachableError,
     RefreshTokenExpiredError,
-    ServiceUnreachableException,
+    ServiceUnavailableException,
 )
 
 COOKIE_NAME = config('COOKIE_NAME', default='my-ride', cast=str)
@@ -31,10 +30,10 @@ templates = Jinja2Templates(directory="api/templates")
 
 
 @app.exception_handler(InvalidTokenException)
-@app.exception_handler(ServiceUnreachableException)
+@app.exception_handler(ServiceUnavailableException)
 async def exception_handler(
     request: Request,
-    exc: InvalidTokenException | ServiceUnreachableException,
+    exc: InvalidTokenException | ServiceUnavailableException,
 ) -> None:
     delete_cookie = (
         f'{COOKIE_NAME}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT'
@@ -102,23 +101,16 @@ async def tokens_required(
                 'Forbidden: refresh token expired',
                 status_code=403,
             )
-        except KeycloakNotReachableError as error:
-            raise ServiceUnreachableException(error)
-    except KeycloakNotReachableError as error:
-        raise ServiceUnreachableException(error)
 
 
 @app.get('/login')
 def login(request: Request) -> RedirectResponse:
     redirect_uri = str(request.url_for('authorize'))
 
-    try:
-        auth_url = keycloak_validator.auth_url(
-            redirect_uri=redirect_uri,
-            scope='openid email',
-        )
-    except KeycloakNotReachableError as error:
-        raise ServiceUnreachableException(error)
+    auth_url = keycloak_validator.auth_url(
+        redirect_uri=redirect_uri,
+        scope='openid email',
+    )
 
     return RedirectResponse(url=auth_url)
 
@@ -129,14 +121,11 @@ def authorize(request: Request) -> RedirectResponse:
     code = request.query_params.get('code')
     redirect_uri = str(request.url_for('authorize'))
 
-    try:
-        # Exchange the authorization code for a token
-        tokens = keycloak_validator.get_tokens(
-            code=code,
-            redirect_uri=redirect_uri,
-        )
-    except KeycloakNotReachableError as error:
-        raise ServiceUnreachableException(error)
+    # Exchange the authorization code for a token
+    tokens = keycloak_validator.get_tokens(
+        code=code,
+        redirect_uri=redirect_uri,
+    )
 
     # Save session storage space
     selected_tokens = {

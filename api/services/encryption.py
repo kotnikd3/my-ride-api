@@ -3,7 +3,7 @@ import json
 from cryptography.fernet import Fernet
 from decouple import config
 
-from api.services.exceptions import InvalidTokenError
+from api.services.exceptions import InvalidTokenException
 
 FERNET_KEY = config(
     'FERNET_KEY',
@@ -18,7 +18,9 @@ class SessionEncryptor:
 
     def encrypt(self, data: dict) -> str:
         if not isinstance(data, dict):
-            raise InvalidTokenError('Only dicts can be encrypted')
+            raise InvalidTokenException(
+                'Only dicts can be encrypted', status_code=403
+            )
         try:
             # dict -> str -> bytes -> str
             data: str = json.dumps(data)
@@ -27,11 +29,13 @@ class SessionEncryptor:
             data: str = data.decode()
             return data
         except Exception as e:
-            raise InvalidTokenError(e)
+            raise InvalidTokenException(repr(e), status_code=403)
 
     def decrypt(self, session: str) -> dict:
         if not isinstance(session, str):
-            raise InvalidTokenError('Only strings can be decrypted')
+            raise InvalidTokenException(
+                'Only strings can be decrypted', status_code=403
+            )
         try:
             # str -> bytes -> str -> dict
             data: bytes = self.fernet.decrypt(token=session)
@@ -39,4 +43,4 @@ class SessionEncryptor:
             data: dict = json.loads(data)
             return data
         except Exception as e:
-            raise InvalidTokenError(e)
+            raise InvalidTokenException(repr(e), status_code=403)

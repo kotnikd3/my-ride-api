@@ -12,7 +12,6 @@ from api.infrastructure.authentication import KeycloakTokenValidator
 from api.services.encryption import SessionEncryptor
 from api.services.exceptions import (
     AccessTokenExpiredError,
-    InvalidTokenError,
     InvalidTokenException,
     ServiceUnavailableException,
 )
@@ -52,13 +51,7 @@ async def session_required(
             'Unauthorized: missing session information',
             status_code=401,
         )
-    try:
-        return session_encryptor.decrypt(session=session)
-    except InvalidTokenError:
-        raise InvalidTokenException(
-            'Forbidden: session is not valid',
-            status_code=403,
-        )
+    return session_encryptor.decrypt(session=session)
 
 
 async def tokens_required(
@@ -70,11 +63,6 @@ async def tokens_required(
             access_token=tokens['access_token'],
         )
         return tokens
-    except InvalidTokenError:
-        raise InvalidTokenException(
-            'Forbidden: access token is not valid',
-            status_code=403,
-        )
     except AccessTokenExpiredError:
         new_tokens = keycloak_validator.fetch_new_tokens(
             refresh_token=tokens['refresh_token'],

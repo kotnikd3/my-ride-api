@@ -6,7 +6,6 @@ from keycloak.exceptions import KeycloakConnectionError
 
 from api.services.exceptions import (
     AccessTokenExpiredError,
-    InvalidTokenError,
     InvalidTokenException,
     ServiceUnavailableException,
 )
@@ -68,9 +67,15 @@ class KeycloakTokenValidator:
         except JWTExpired as error:
             raise AccessTokenExpiredError(repr(error))
         except JWException as error:
-            raise InvalidTokenError(repr(error))
-        except ValueError as error:
-            raise InvalidTokenError(repr(error))
+            raise InvalidTokenException(
+                repr(error),
+                status_code=403,
+            )
+        except ValueError:
+            raise InvalidTokenException(
+                'Forbidden: access token is not valid',
+                status_code=403,
+            )
         else:
             return claims
 

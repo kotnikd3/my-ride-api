@@ -14,7 +14,6 @@ from api.infrastructure.routes import (
 from api.services.encryption import SessionEncryptor
 from api.services.exceptions import (
     AccessTokenExpiredError,
-    InvalidTokenError,
     InvalidTokenException,
 )
 
@@ -115,7 +114,7 @@ class TestDependencies(IsolatedAsyncioTestCase):
         with self.assertRaises(InvalidTokenException) as context:
             await session_required('something')
 
-        self.assertIn('Forbidden: session is not valid', str(context.exception))
+        self.assertIn('InvalidToken()', str(context.exception))
         self.assertEqual(403, context.exception.status_code)
 
     @patch.object(KeycloakTokenValidator, 'authenticate_token')
@@ -150,7 +149,9 @@ class TestDependencies(IsolatedAsyncioTestCase):
         self,
         mock_keycloak_authenticate_token,
     ):
-        mock_keycloak_authenticate_token.side_effect = InvalidTokenError
+        mock_keycloak_authenticate_token.side_effect = InvalidTokenException(
+            'Forbidden: access token is not valid', status_code=403
+        )
 
         with self.assertRaises(InvalidTokenException) as context:
             await tokens_required(Response(), mocked_tokens())

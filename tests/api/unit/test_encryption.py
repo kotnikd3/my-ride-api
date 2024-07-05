@@ -1,7 +1,7 @@
 from unittest import TestCase
 
 from api.services.encryption import SessionEncryptor
-from api.services.exceptions import InvalidTokenError
+from api.services.exceptions import InvalidTokenException
 
 
 class TestSessionEncryptor(TestCase):
@@ -21,7 +21,7 @@ class TestSessionEncryptor(TestCase):
         self.assertIsInstance(encrypted_data, str)
 
     def test_encrypt_returns_exception(self):
-        with self.assertRaises(InvalidTokenError) as context:
+        with self.assertRaises(InvalidTokenException) as context:
             self.session_encryptor.encrypt(data='NOT DICT')
 
         self.assertIn('Only dicts can be encrypted', str(context.exception))
@@ -39,7 +39,7 @@ class TestSessionEncryptor(TestCase):
 
     def test_decrypt_returns_exception(self):
         # Check if 'Expired' is in the exception message
-        with self.assertRaises(InvalidTokenError) as context:
+        with self.assertRaises(InvalidTokenException) as context:
             self.session_encryptor.decrypt(session={'foo': 'bar'})
 
         self.assertIn('Only strings can be decrypted', str(context.exception))

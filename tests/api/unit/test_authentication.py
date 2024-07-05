@@ -11,7 +11,6 @@ from api.infrastructure.authentication import (
 )
 from api.services.exceptions import (
     AccessTokenExpiredError,
-    InvalidTokenError,
     InvalidTokenException,
 )
 
@@ -80,7 +79,7 @@ class TestKeycloakTokenValidator(TestCase):
         }
         signed_token = self._get_signed_token(payload=payload)
 
-        with self.assertRaises(InvalidTokenError) as context:
+        with self.assertRaises(InvalidTokenException) as context:
             self.validator.authenticate_token(signed_token)
 
         self.assertIn('Claim jti is missing', str(context.exception))
@@ -95,7 +94,7 @@ class TestKeycloakTokenValidator(TestCase):
         signed_token = self._get_signed_token(payload=payload)
 
         # Check if 'Expired' is in the exception message
-        with self.assertRaises(InvalidTokenError) as context:
+        with self.assertRaises(InvalidTokenException) as context:
             self.validator.authenticate_token(signed_token)
 
         self.assertIn("Invalid 'aud' value.", str(context.exception))
@@ -109,7 +108,7 @@ class TestKeycloakTokenValidator(TestCase):
         }
         signed_token = self._get_signed_token(payload=payload)
 
-        with self.assertRaises(InvalidTokenError) as context:
+        with self.assertRaises(InvalidTokenException) as context:
             self.validator.authenticate_token(signed_token)
 
         self.assertIn("Invalid 'iss' value.", str(context.exception))

@@ -17,7 +17,7 @@ def mocked_tokens():
     }
 
 
-class TestController(TestCase):
+class TestApiRoutes(TestCase):
     def setUp(self):
         self.client = TestClient(app=app)
 

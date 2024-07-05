@@ -18,7 +18,7 @@ from api.infrastructure.dependencies import (
 from api.main import app
 
 
-class TestControllerAsProxy(TestCase):
+class TestRideRoutes(TestCase):
     def _get_signed_token(self, payload: dict) -> str:
         token = jwt.JWT(header={'alg': 'RS256'}, claims=payload)
         token.make_signed_token(self.private_jwk)

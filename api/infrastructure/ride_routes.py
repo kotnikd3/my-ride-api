@@ -11,7 +11,7 @@ ride_rooter = APIRouter(prefix='/ride', tags=['ride'])
 @ride_rooter.get('/{path:path}')
 async def proxy(path: str, tokens: Annotated[dict, Depends(tokens_required)]):
     target_url = (
-        f'http://rides:8000/rides/{path}' if path else 'http://rides:8000/rides'
+        f'http://rides:8000/ride/{path}' if path else 'http://rides:8000/ride'
     )
     headers = {'Authorization': f'Bearer {tokens['access_token']}'}
 

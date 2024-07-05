@@ -1,0 +1,84 @@
+import json
+from typing import Annotated
+
+from fastapi import APIRouter, Depends, Request
+from fastapi.responses import RedirectResponse
+from fastapi.templating import Jinja2Templates
+
+from api.infrastructure.dependencies import (
+    COOKIE_NAME,
+    keycloak_validator,
+    session_encryptor,
+    tokens_required,
+)
+
+api_rooter = APIRouter(prefix='', tags=['root'])
+
+
+@api_rooter.get('/login')
+def login(request: Request) -> RedirectResponse:
+    redirect_uri = str(request.url_for('authorize'))
+
+    auth_url = keycloak_validator.auth_url(
+        redirect_uri=redirect_uri,
+        scope='openid email',
+    )
+
+    return RedirectResponse(url=auth_url)
+
+
+@api_rooter.get('/authorize')
+def authorize(request: Request) -> RedirectResponse:
+    # Get the authorization code from the callback URL
+    code = request.query_params.get('code')
+    redirect_uri = str(request.url_for('authorize'))
+
+    # Exchange the authorization code for a token
+    tokens = keycloak_validator.get_tokens(
+        code=code,
+        redirect_uri=redirect_uri,
+    )
+
+    # Save session storage space
+    selected_tokens = {
+        'access_token': tokens['access_token'],
+        'refresh_token': tokens['refresh_token'],
+    }
+    encrypted_session = session_encryptor.encrypt(data=selected_tokens)
+
+    # TODO optional
+    response = RedirectResponse(url=request.url_for('index'), status_code=302)
+    response.set_cookie(
+        key=COOKIE_NAME,
+        value=encrypted_session,
+        secure=True,
+        httponly=True,
+        max_age=tokens['refresh_expires_in'],
+    )
+
+    return response
+
+
+@api_rooter.get('/logout')
+def logout(tokens: Annotated[dict, Depends(tokens_required)]):
+    keycloak_validator.logout(refresh_token=tokens['refresh_token'])
+
+    response = RedirectResponse(
+        url=api_rooter.url_path_for('index'), status_code=302
+    )
+    response.delete_cookie(key=COOKIE_NAME)
+
+    return response
+
+
+@api_rooter.get('/')
+async def index(request: Request):
+    encrypted_session = request.cookies.get(COOKIE_NAME)
+
+    tokens = None
+    if encrypted_session:
+        tokens = session_encryptor.decrypt(session=encrypted_session)
+        tokens = json.dumps(tokens, sort_keys=True, indent=4)
+
+    templates = Jinja2Templates(directory='api/templates')
+    return templates.TemplateResponse(request, 'index.html', {'data': tokens})

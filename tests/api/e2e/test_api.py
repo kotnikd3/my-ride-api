@@ -10,12 +10,12 @@ from api.infrastructure.authentication import (
     OAUTH_REALM_URL,
     KeycloakTokenValidator,
 )
-from api.infrastructure.routes import (
+from api.infrastructure.dependencies import (
     COOKIE_NAME,
-    app,
     keycloak_validator,
     session_encryptor,
 )
+from api.main import app
 
 
 class TestControllerAsProxy(TestCase):
@@ -56,7 +56,7 @@ class TestControllerAsProxy(TestCase):
 
     def test_proxy_without_session(self):
         # with self.assertRaises(HTTPException) as context:
-        response = self.client.get('/rides')
+        response = self.client.get('/ride')
 
         self.assertIn(
             'Unauthorized: missing session information',

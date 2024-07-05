@@ -22,11 +22,15 @@ async def exception_handler(
     request: Request,
     exc: InvalidTokenException | ServiceUnavailableException,
 ) -> None:
-    delete_cookie = (
-        f'{COOKIE_NAME}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT'
-    )
-    raise HTTPException(
-        detail=str(exc),
-        status_code=exc.status_code,
-        headers={'set-cookie': delete_cookie},
-    )
+    arguments = {
+        'detail': str(exc),
+        'status_code': exc.status_code,
+        'headers': {
+            'set-cookie': f'{COOKIE_NAME}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT'  # noqa: E501
+        },
+    }
+    if isinstance(exc, ServiceUnavailableException):
+        # Don't delete cookies in a case of ServiceUnavailableException
+        del arguments['headers']  # Delete key
+
+    raise HTTPException(**arguments)

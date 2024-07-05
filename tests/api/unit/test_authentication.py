@@ -12,7 +12,7 @@ from api.infrastructure.authentication import (
 from api.services.exceptions import (
     AccessTokenExpiredError,
     InvalidTokenError,
-    RefreshTokenExpiredError,
+    InvalidTokenException,
 )
 
 
@@ -138,18 +138,18 @@ class TestKeycloakTokenValidator(TestCase):
     @patch.object(KeycloakOpenID, 'refresh_token')
     def test_fetch_new_tokens_failure(self, mock_keycloak_refresh_token):
         # Mock the keycloak instance and refresh_token method to raise an error
-        mock_keycloak_refresh_token.side_effect = KeycloakPostError(
-            'Invalid refresh token',
-        )
+        mock_keycloak_refresh_token.side_effect = KeycloakPostError()
 
         # Call the fetch_new_tokens method and expect an exception
-        with self.assertRaises(RefreshTokenExpiredError) as context:
+        with self.assertRaises(InvalidTokenException) as context:
             self.validator.fetch_new_tokens(
                 refresh_token='invalid_refresh_token',
             )
 
         # Verify the error message
-        self.assertIn('Invalid refresh token', str(context.exception))
+        self.assertIn(
+            'Forbidden: refresh token expired', str(context.exception)
+        )
         mock_keycloak_refresh_token.assert_called_once_with(
             refresh_token='invalid_refresh_token',
         )

@@ -16,7 +16,6 @@ from api.services.exceptions import (
     AccessTokenExpiredError,
     InvalidTokenError,
     InvalidTokenException,
-    RefreshTokenExpiredError,
 )
 
 
@@ -169,7 +168,9 @@ class TestDependencies(IsolatedAsyncioTestCase):
         mock_keycloak_fetch_new_tokens,
     ):
         mock_keycloak_authenticate_token.side_effect = AccessTokenExpiredError
-        mock_keycloak_fetch_new_tokens.side_effect = RefreshTokenExpiredError
+        mock_keycloak_fetch_new_tokens.side_effect = InvalidTokenException(
+            'Forbidden: refresh token expired', status_code=403
+        )
 
         with self.assertRaises(InvalidTokenException) as context:
             await tokens_required(Response(), mocked_tokens())

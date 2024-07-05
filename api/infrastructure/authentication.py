@@ -7,7 +7,7 @@ from keycloak.exceptions import KeycloakConnectionError
 from api.services.exceptions import (
     AccessTokenExpiredError,
     InvalidTokenError,
-    RefreshTokenExpiredError,
+    InvalidTokenException,
     ServiceUnavailableException,
 )
 
@@ -102,7 +102,10 @@ class KeycloakTokenValidator:
     def fetch_new_tokens(self, refresh_token: str) -> dict:
         try:
             return self.keycloak.refresh_token(refresh_token=refresh_token)
-        except KeycloakPostError as error:
-            raise RefreshTokenExpiredError(repr(error))
+        except KeycloakPostError:
+            raise InvalidTokenException(
+                'Forbidden: refresh token expired',
+                status_code=403,
+            )
         except KeycloakConnectionError:
             raise ServiceUnavailableException('Service Keycloak is unavailable')

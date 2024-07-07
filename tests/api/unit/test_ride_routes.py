@@ -18,6 +18,7 @@ from api.infrastructure.dependencies import (
 from api.main import app
 
 
+# TODO refactor tests, make tests with pytest
 class TestRideRoutes(TestCase):
     def _get_signed_token(self, payload: dict) -> str:
         token = jwt.JWT(header={'alg': 'RS256'}, claims=payload)

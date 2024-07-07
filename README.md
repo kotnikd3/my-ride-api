@@ -85,7 +85,3 @@ the same as some Cloud Run instance).
 ```shell
 gcloud builds triggers run <trigger name> --branch=<branch>
 ```
-
-
-## TODO
-- optional: redirect user to originally requested url

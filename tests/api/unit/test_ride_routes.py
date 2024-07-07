@@ -56,7 +56,7 @@ class TestRideRoutes(TestCase):
 
     def test_proxy_without_session(self):
         # with self.assertRaises(HTTPException) as context:
-        response = self.client.get('/ride')
+        response = self.client.post('/ride')
 
         self.assertIn(
             'Unauthorized: missing session information',

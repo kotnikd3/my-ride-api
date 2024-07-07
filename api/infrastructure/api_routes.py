@@ -1,7 +1,7 @@
 import json
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, Request, status
 from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
 
@@ -15,7 +15,7 @@ from api.infrastructure.dependencies import (
 api_rooter = APIRouter(prefix='', tags=['root'])
 
 
-@api_rooter.get('/login')
+@api_rooter.get('/login', status_code=status.HTTP_307_TEMPORARY_REDIRECT)
 def login(request: Request) -> RedirectResponse:
     redirect_uri = str(request.url_for('authorize'))
 
@@ -24,10 +24,10 @@ def login(request: Request) -> RedirectResponse:
         scope='openid email',
     )
 
-    return RedirectResponse(url=auth_url)
+    return RedirectResponse(url=auth_url)  # Status code = 307
 
 
-@api_rooter.get('/authorize')
+@api_rooter.get('/authorize', status_code=status.HTTP_302_FOUND)
 def authorize(request: Request) -> RedirectResponse:
     # Get the authorization code from the callback URL
     code = request.query_params.get('code')
@@ -59,8 +59,10 @@ def authorize(request: Request) -> RedirectResponse:
     return response
 
 
-@api_rooter.get('/logout')
-def logout(tokens: Annotated[dict, Depends(tokens_required)]):
+@api_rooter.get('/logout', status_code=status.HTTP_302_FOUND)
+def logout(
+    tokens: Annotated[dict, Depends(tokens_required)],
+) -> RedirectResponse:
     keycloak_validator.logout(refresh_token=tokens['refresh_token'])
 
     response = RedirectResponse(
@@ -71,7 +73,7 @@ def logout(tokens: Annotated[dict, Depends(tokens_required)]):
     return response
 
 
-@api_rooter.get('/')
+@api_rooter.get('/', status_code=status.HTTP_200_OK)
 async def index(request: Request):
     encrypted_session = request.cookies.get(COOKIE_NAME)
 

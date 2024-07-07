@@ -30,6 +30,7 @@ class TestApiRoutes(TestCase):
         self.assertEqual(200, response.status_code)
         self.assertIn('My ride', response.text)
 
+    # TODO remove
     @patch.object(SessionEncryptor, 'decrypt')
     def test_index_with_cookie(self, mock_decrypt):
         mock_decrypt.return_value = mocked_tokens()

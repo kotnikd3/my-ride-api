@@ -73,6 +73,7 @@ def logout(
     return response
 
 
+# TODO remove
 @api_rooter.get('/', status_code=status.HTTP_200_OK)
 async def index(request: Request):
     encrypted_session = request.cookies.get(COOKIE_NAME)

@@ -18,9 +18,13 @@ ride_router = APIRouter(prefix='/ride', tags=['ride'])
 async def make_request(
     method: str,
     url: str,
-    headers: Optional[Dict[str, str]] = None,
+    access_token: str = None,
     json: Optional[Dict[str, Any]] = None,
 ) -> Response:
+    headers = (
+        {'Authorization': f'Bearer {access_token}'} if access_token else None
+    )
+
     try:
         async with httpx.AsyncClient() as client:
             response = await client.request(
@@ -50,9 +54,10 @@ async def get_all_by_user_id(
     tokens: Annotated[dict, Depends(tokens_required)],
 ) -> Response:
     target_url = f'{RIDE_SERVICE}/ride/by_user'
-    headers = {'Authorization': f'Bearer {tokens['access_token']}'}
 
-    return await make_request('GET', target_url, headers=headers)
+    return await make_request(
+        'GET', target_url, access_token=tokens['access_token']
+    )
 
 
 @ride_router.get('/by_location', status_code=status.HTTP_200_OK)
@@ -84,9 +89,10 @@ async def create(
     tokens: Annotated[dict, Depends(tokens_required)],
 ) -> Response:
     target_url = f'{RIDE_SERVICE}/ride'
-    headers = {'Authorization': f'Bearer {tokens['access_token']}'}
 
-    return await make_request('POST', target_url, headers=headers, json=body)
+    return await make_request(
+        'POST', target_url, access_token=tokens['access_token'], json=body
+    )
 
 
 @ride_router.put('/{ride_id}', status_code=status.HTTP_200_OK)
@@ -96,9 +102,10 @@ async def put(
     tokens: Annotated[dict, Depends(tokens_required)],
 ) -> Response:
     target_url = f'{RIDE_SERVICE}/ride/{ride_id}'
-    headers = {'Authorization': f'Bearer {tokens['access_token']}'}
 
-    return await make_request('PUT', target_url, headers=headers, json=body)
+    return await make_request(
+        'PUT', target_url, access_token=tokens['access_token'], json=body
+    )
 
 
 @ride_router.delete('/{ride_id}', status_code=status.HTTP_204_NO_CONTENT)
@@ -107,6 +114,7 @@ async def delete(
     tokens: Annotated[dict, Depends(tokens_required)],
 ) -> Response:
     target_url = f'{RIDE_SERVICE}/ride/{ride_id}'
-    headers = {'Authorization': f'Bearer {tokens['access_token']}'}
 
-    return await make_request('DELETE', target_url, headers=headers)
+    return await make_request(
+        'DELETE', target_url, access_token=tokens['access_token']
+    )

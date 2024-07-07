@@ -5,7 +5,7 @@ from uuid import UUID
 
 import httpx
 from decouple import config
-from fastapi import APIRouter, Body, Depends, status
+from fastapi import APIRouter, Body, Depends, Response, status
 
 from api.infrastructure.dependencies import tokens_required
 from api.services.exceptions import ServiceUnavailableException
@@ -28,7 +28,11 @@ async def get_all() -> Any:
             f'Ride service is unavailable: {repr(error)}'
         )
 
-    return response.json()
+    return Response(
+        content=response.content,
+        status_code=response.status_code,
+        headers=dict(response.headers),
+    )
 
 
 @ride_router.get('/by_user', status_code=status.HTTP_200_OK)
@@ -47,7 +51,11 @@ async def get_all_by_user_id(
             f'Ride service is unavailable: {repr(error)}'
         )
 
-    return response.json()
+    return Response(
+        content=response.content,
+        status_code=response.status_code,
+        headers=dict(response.headers),
+    )
 
 
 @ride_router.get('/by_location', status_code=status.HTTP_200_OK)
@@ -72,7 +80,11 @@ async def get_all_by_location(
             f'Ride service is unavailable: {repr(error)}'
         )
 
-    return response.json()
+    return Response(
+        content=response.content,
+        status_code=response.status_code,
+        headers=dict(response.headers),
+    )
 
 
 @ride_router.get('/{ride_id}', status_code=status.HTTP_200_OK)
@@ -88,14 +100,18 @@ async def get_one_by_id(ride_id: UUID):
             f'Ride service is unavailable: {repr(error)}'
         )
 
-    return response.json()
+    return Response(
+        content=response.content,
+        status_code=response.status_code,
+        headers=dict(response.headers),
+    )
 
 
-@ride_router.post('', status_code=status.HTTP_201_CREATED)
+@ride_router.post('')
 async def create(
     body: Annotated[dict, Body],
     tokens: Annotated[dict, Depends(tokens_required)],
-) -> Any:
+) -> Response:
     target_url = f'{RIDE_SERVICE}/ride'
     headers = {'Authorization': f'Bearer {tokens['access_token']}'}
 
@@ -110,7 +126,11 @@ async def create(
             f'Ride service is unavailable: {repr(error)}'
         )
 
-    return response.json()
+    return Response(
+        content=response.content,
+        status_code=response.status_code,
+        headers=dict(response.headers),
+    )
 
 
 @ride_router.put('/{ride_id}', status_code=status.HTTP_200_OK)
@@ -133,25 +153,34 @@ async def put(
             f'Ride service is unavailable: {repr(error)}'
         )
 
-    return response.json()
+    return Response(
+        content=response.content,
+        status_code=response.status_code,
+        headers=dict(response.headers),
+    )
 
 
 @ride_router.delete('/{ride_id}', status_code=status.HTTP_204_NO_CONTENT)
 async def delete(
     ride_id: UUID,
     tokens: Annotated[dict, Depends(tokens_required)],
-) -> None:
+) -> Response:
     target_url = f'{RIDE_SERVICE}/ride/{ride_id}'
     headers = {'Authorization': f'Bearer {tokens['access_token']}'}
 
     try:
         # Send request to Rides microservice
         async with httpx.AsyncClient() as client:
-            await client.delete(target_url, headers=headers, timeout=4)
+            response = await client.delete(
+                target_url, headers=headers, timeout=4
+            )
     except (httpx.TimeoutException, httpx.ConnectError) as error:
         raise ServiceUnavailableException(
             f'Ride service is unavailable: {repr(error)}'
         )
 
-    # TODO if response == 404, then return something else
-    return None
+    return Response(
+        content=response.content,
+        status_code=response.status_code,
+        headers=dict(response.headers),
+    )

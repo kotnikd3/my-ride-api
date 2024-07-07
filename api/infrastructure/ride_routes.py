@@ -78,6 +78,7 @@ async def get_all_by_location(
 
 @ride_router.get('/{ride_id}', status_code=status.HTTP_200_OK)
 async def get_one_by_id(ride_id: UUID) -> Response:
+    # TODO tokens_optional
     target_url = f'{RIDE_SERVICE}/ride/{ride_id}'
 
     return await make_request('GET', target_url)

@@ -1,5 +1,5 @@
 from datetime import date
-from typing import Annotated, Any
+from typing import Annotated
 from urllib.parse import urlencode
 from uuid import UUID
 
@@ -16,7 +16,7 @@ ride_router = APIRouter(prefix='/ride', tags=['ride'])
 
 
 @ride_router.get('', status_code=status.HTTP_200_OK)
-async def get_all() -> Any:
+async def get_all() -> Response:
     target_url = f'{RIDE_SERVICE}/ride'
 
     try:
@@ -38,7 +38,7 @@ async def get_all() -> Any:
 @ride_router.get('/by_user', status_code=status.HTTP_200_OK)
 async def get_all_by_user_id(
     tokens: Annotated[dict, Depends(tokens_required)],
-) -> Any:
+) -> Response:
     target_url = f'{RIDE_SERVICE}/ride/by_user'
     headers = {'Authorization': f'Bearer {tokens['access_token']}'}
 
@@ -63,7 +63,7 @@ async def get_all_by_location(
     origin: str,
     destination: str,
     departure: date,
-) -> Any:
+) -> Response:
     query_params = {
         'origin': origin,
         'destination': destination,
@@ -88,7 +88,7 @@ async def get_all_by_location(
 
 
 @ride_router.get('/{ride_id}', status_code=status.HTTP_200_OK)
-async def get_one_by_id(ride_id: UUID):
+async def get_one_by_id(ride_id: UUID) -> Response:
     target_url = f'{RIDE_SERVICE}/ride/{ride_id}'
 
     try:
@@ -138,7 +138,7 @@ async def put(
     ride_id: UUID,
     body: Annotated[dict, Body],
     tokens: Annotated[dict, Depends(tokens_required)],
-) -> Any:
+) -> Response:
     target_url = f'{RIDE_SERVICE}/ride/{ride_id}'
     headers = {'Authorization': f'Bearer {tokens['access_token']}'}
 

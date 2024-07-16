@@ -12,7 +12,7 @@ from api.infrastructure.dependencies import (
     tokens_required,
 )
 
-api_rooter = APIRouter(prefix='', tags=['root'])
+api_rooter = APIRouter(prefix='', tags=['api'])
 
 
 @api_rooter.get('/login', status_code=status.HTTP_307_TEMPORARY_REDIRECT)

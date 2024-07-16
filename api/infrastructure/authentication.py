@@ -32,24 +32,26 @@ class KeycloakTokenValidator:
         try:
             _public_key = self.keycloak.public_key()
         except KeycloakConnectionError:
-            self.public_key = None
+            self._public_key = None
         else:
             _public_key = (
                 '-----BEGIN PUBLIC KEY-----\n'
                 f'{_public_key}'
                 '\n-----END PUBLIC KEY-----'
             )
-            self.public_key = jwk.JWK.from_pem(_public_key.encode('utf-8'))
+            self._public_key = jwk.JWK.from_pem(_public_key.encode('utf-8'))
+
+    @property
+    def public_key(self):
+        if not self._public_key:
+            # If Keycloak is not reachable when __init(self)__ is executed, try
+            # reaching it (later) on every request
+            self._set_public_key()
+        return self._public_key
 
     def authenticate_token(self, access_token: str) -> dict:
-        if self.public_key is None:
-            # If Keycloak is not reachable when __init(self)__ is executed, try
-            # reaching it on every request
-            self._set_public_key()
-            if self.public_key is None:
-                raise ServiceUnavailableException(
-                    'Service Keycloak is unavailable'
-                )
+        if not self.public_key:
+            raise ServiceUnavailableException('Service Keycloak is unavailable')
 
         check_claims = {
             'exp': None,

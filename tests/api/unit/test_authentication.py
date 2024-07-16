@@ -35,7 +35,7 @@ class TestKeycloakTokenValidator(TestCase):
         cls.private_jwk = jwk.JWK.from_json(private_key)
 
         validator = KeycloakTokenValidator()
-        validator.public_key = public_jwk
+        validator._public_key = public_jwk
 
         cls.validator = validator
 

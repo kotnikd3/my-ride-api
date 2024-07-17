@@ -3,10 +3,10 @@ from unittest.mock import patch
 
 from fastapi.testclient import TestClient
 
+from api.infrastructure.api_routes import front_end
 from api.infrastructure.authentication import KeycloakTokenValidator
 from api.infrastructure.dependencies import COOKIE_NAME, get_tokens
 from api.main import app
-from api.services.encryption import SessionEncryptor
 
 
 def mocked_tokens():
@@ -24,24 +24,6 @@ class TestApiRoutes(TestCase):
     def tearDown(self) -> None:
         app.dependency_overrides = {}
 
-    def test_index_without_cookie(self):
-        response = self.client.get('/')
-
-        self.assertEqual(200, response.status_code)
-        self.assertIn('My ride', response.text)
-
-    # TODO remove
-    @patch.object(SessionEncryptor, 'decrypt')
-    def test_index_with_cookie(self, mock_decrypt):
-        mock_decrypt.return_value = mocked_tokens()
-
-        self.client.cookies[COOKIE_NAME] = 'mocked'
-        response = self.client.get('/')
-
-        self.assertEqual(200, response.status_code)
-        self.assertIn('My ride', response.text)
-        self.assertIn('mocked_access_token', response.text)
-
     @patch.object(KeycloakTokenValidator, 'logout')
     def test_logout(self, mock_keycloak_logout):
         mock_keycloak_logout.return_value = None
@@ -52,9 +34,7 @@ class TestApiRoutes(TestCase):
 
         self.assertEqual(302, response.status_code)
         self.assertTrue(response.is_redirect)
-        self.assertEqual(
-            app.url_path_for('index'), response.headers['location']
-        )
+        self.assertEqual(front_end, response.headers['location'])
         self.assertNotIn(COOKIE_NAME, response.cookies)
 
     @patch.object(KeycloakTokenValidator, 'get_tokens')
@@ -69,9 +49,7 @@ class TestApiRoutes(TestCase):
 
         self.assertEqual(302, response.status_code)
         self.assertTrue(response.is_redirect)
-        self.assertEqual(
-            str(self.client.base_url) + '/', response.headers['location']
-        )
+        self.assertEqual(front_end, response.headers['location'])
         self.assertIn(COOKIE_NAME, response.cookies)
 
     @patch.object(KeycloakTokenValidator, 'auth_url')

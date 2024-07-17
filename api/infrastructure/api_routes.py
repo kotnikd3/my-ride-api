@@ -1,9 +1,7 @@
-import json
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Request, status
 from fastapi.responses import RedirectResponse
-from fastapi.templating import Jinja2Templates
 
 from api.infrastructure.dependencies import (
     COOKIE_NAME,
@@ -13,6 +11,9 @@ from api.infrastructure.dependencies import (
 )
 
 api_rooter = APIRouter(prefix='', tags=['api'])
+
+# TODO make dynamic
+front_end = 'http://localhost:5173/'
 
 
 @api_rooter.get('/login', status_code=status.HTTP_307_TEMPORARY_REDIRECT)
@@ -46,8 +47,7 @@ def authorize(request: Request) -> RedirectResponse:
     }
     encrypted_session = session_encryptor.encrypt(data=selected_tokens)
 
-    # TODO optional
-    response = RedirectResponse(url=request.url_for('index'), status_code=302)
+    response = RedirectResponse(url=front_end, status_code=302)
     response.set_cookie(
         key=COOKIE_NAME,
         value=encrypted_session,
@@ -65,23 +65,7 @@ def logout(
 ) -> RedirectResponse:
     keycloak_validator.logout(refresh_token=tokens['refresh_token'])
 
-    response = RedirectResponse(
-        url=api_rooter.url_path_for('index'), status_code=302
-    )
+    response = RedirectResponse(url=front_end, status_code=302)
     response.delete_cookie(key=COOKIE_NAME)
 
     return response
-
-
-# TODO remove
-@api_rooter.get('/', status_code=status.HTTP_200_OK)
-async def index(request: Request):
-    encrypted_session = request.cookies.get(COOKIE_NAME)
-
-    tokens = None
-    if encrypted_session:
-        tokens = session_encryptor.decrypt(session=encrypted_session)
-        tokens = json.dumps(tokens, sort_keys=True, indent=4)
-
-    templates = Jinja2Templates(directory='api/templates')
-    return templates.TemplateResponse(request, 'index.html', {'data': tokens})

@@ -7,7 +7,7 @@ import httpx
 from decouple import config
 from fastapi import APIRouter, Body, Depends, Response, status
 
-from api.infrastructure.dependencies import tokens_required
+from api.infrastructure.dependencies import get_tokens, get_tokens_or_none
 from api.services.exceptions import ServiceUnavailableException
 
 RIDE_SERVICE = config('RIDE_SERVICE')
@@ -51,7 +51,7 @@ async def get_all() -> Response:
 
 @ride_router.get('/by_user', status_code=status.HTTP_200_OK)
 async def get_all_by_user_id(
-    tokens: Annotated[dict, Depends(tokens_required)],
+    tokens: Annotated[dict, Depends(get_tokens)],
 ) -> Response:
     target_url = f'{RIDE_SERVICE}/ride/by_user'
 
@@ -77,17 +77,25 @@ async def get_all_by_location(
 
 
 @ride_router.get('/{ride_id}', status_code=status.HTTP_200_OK)
-async def get_one_by_id(ride_id: UUID) -> Response:
-    # TODO tokens_optional
+async def get_one_by_id(
+    ride_id: UUID,
+    tokens: Annotated[dict, Depends(get_tokens_or_none)],
+) -> Response:
     target_url = f'{RIDE_SERVICE}/ride/{ride_id}'
 
-    return await make_request('GET', target_url)
+    access_token = tokens['access_token'] if tokens else None
+
+    return await make_request(
+        'GET',
+        target_url,
+        access_token=access_token,
+    )
 
 
 @ride_router.post('')
 async def create(
     body: Annotated[dict, Body],
-    tokens: Annotated[dict, Depends(tokens_required)],
+    tokens: Annotated[dict, Depends(get_tokens)],
 ) -> Response:
     target_url = f'{RIDE_SERVICE}/ride'
 
@@ -100,7 +108,7 @@ async def create(
 async def put(
     ride_id: UUID,
     body: Annotated[dict, Body],
-    tokens: Annotated[dict, Depends(tokens_required)],
+    tokens: Annotated[dict, Depends(get_tokens)],
 ) -> Response:
     target_url = f'{RIDE_SERVICE}/ride/{ride_id}'
 
@@ -112,7 +120,7 @@ async def put(
 @ride_router.delete('/{ride_id}', status_code=status.HTTP_204_NO_CONTENT)
 async def delete(
     ride_id: UUID,
-    tokens: Annotated[dict, Depends(tokens_required)],
+    tokens: Annotated[dict, Depends(get_tokens)],
 ) -> Response:
     target_url = f'{RIDE_SERVICE}/ride/{ride_id}'
 

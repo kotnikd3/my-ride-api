@@ -7,9 +7,9 @@ from fastapi.templating import Jinja2Templates
 
 from api.infrastructure.dependencies import (
     COOKIE_NAME,
+    get_tokens,
     keycloak_validator,
     session_encryptor,
-    tokens_required,
 )
 
 api_rooter = APIRouter(prefix='', tags=['api'])
@@ -61,7 +61,7 @@ def authorize(request: Request) -> RedirectResponse:
 
 @api_rooter.get('/logout', status_code=status.HTTP_302_FOUND)
 def logout(
-    tokens: Annotated[dict, Depends(tokens_required)],
+    tokens: Annotated[dict, Depends(get_tokens)],
 ) -> RedirectResponse:
     keycloak_validator.logout(refresh_token=tokens['refresh_token'])
 

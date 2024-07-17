@@ -6,8 +6,8 @@ from fastapi import Response
 from api.infrastructure.authentication import KeycloakTokenValidator
 from api.infrastructure.dependencies import (
     COOKIE_NAME,
-    session_required,
-    tokens_required,
+    get_session_or_none,
+    get_tokens,
 )
 from api.services.encryption import SessionEncryptor
 from api.services.exceptions import (
@@ -26,38 +26,29 @@ def mocked_tokens():
 
 class TestDependencies(IsolatedAsyncioTestCase):
     @patch.object(SessionEncryptor, 'decrypt')
-    async def test_session_required(self, mock_decrypt):
+    async def test_get_session_or_none(self, mock_decrypt):
         mock_decrypt.return_value = mocked_tokens()
 
-        session = await session_required('encrypted_string')
+        session = await get_session_or_none('encrypted_string')
         self.assertEqual(session, mocked_tokens())
 
-    async def test_session_required_missing_session(self):
+    async def test_get_session_or_none_session_not_valid(self):
         with self.assertRaises(InvalidTokenException) as context:
-            await session_required(None)  # Missing session
-
-        self.assertIn(
-            'Unauthorized: missing session information', str(context.exception)
-        )
-        self.assertEqual(401, context.exception.status_code)
-
-    async def test_session_required_session_not_valid(self):
-        with self.assertRaises(InvalidTokenException) as context:
-            await session_required('something')
+            await get_session_or_none('something')
 
         self.assertIn('InvalidToken()', str(context.exception))
         self.assertEqual(403, context.exception.status_code)
 
     @patch.object(KeycloakTokenValidator, 'authenticate_token')
-    async def test_tokens_required(self, mock_keycloak_authenticate_token):
+    async def test_get_tokens(self, mock_keycloak_authenticate_token):
         mock_keycloak_authenticate_token.return_value = None
 
-        tokens = await tokens_required(Response(), mocked_tokens())
+        tokens = await get_tokens(Response(), mocked_tokens())
         self.assertEqual(tokens, mocked_tokens())
 
     @patch.object(KeycloakTokenValidator, 'fetch_new_tokens')
     @patch.object(KeycloakTokenValidator, 'authenticate_token')
-    async def test_tokens_required_new_tokens(
+    async def test_get_tokens_new_tokens(
         self,
         mock_keycloak_authenticate_token,
         mock_keycloak_fetch_new_tokens,
@@ -66,7 +57,7 @@ class TestDependencies(IsolatedAsyncioTestCase):
         mock_keycloak_fetch_new_tokens.return_value = mocked_tokens()
 
         response = Response()
-        new_tokens = await tokens_required(response, mocked_tokens())
+        new_tokens = await get_tokens(response, mocked_tokens())
         expected_tokens = {
             'access_token': 'mocked_access_token',
             'refresh_token': 'mocked_refresh_token',
@@ -76,7 +67,7 @@ class TestDependencies(IsolatedAsyncioTestCase):
         self.assertEqual(expected_tokens, new_tokens)
 
     @patch.object(KeycloakTokenValidator, 'authenticate_token')
-    async def test_tokens_required_not_valid_access_token(
+    async def test_get_tokens_not_valid_access_token(
         self,
         mock_keycloak_authenticate_token,
     ):
@@ -85,7 +76,7 @@ class TestDependencies(IsolatedAsyncioTestCase):
         )
 
         with self.assertRaises(InvalidTokenException) as context:
-            await tokens_required(Response(), mocked_tokens())
+            await get_tokens(Response(), mocked_tokens())
 
         self.assertIn(
             'Forbidden: access token is not valid', str(context.exception)
@@ -94,7 +85,7 @@ class TestDependencies(IsolatedAsyncioTestCase):
 
     @patch.object(KeycloakTokenValidator, 'fetch_new_tokens')
     @patch.object(KeycloakTokenValidator, 'authenticate_token')
-    async def test_tokens_required_refresh_token_expired(
+    async def test_get_tokens_refresh_token_expired(
         self,
         mock_keycloak_authenticate_token,
         mock_keycloak_fetch_new_tokens,
@@ -105,9 +96,18 @@ class TestDependencies(IsolatedAsyncioTestCase):
         )
 
         with self.assertRaises(InvalidTokenException) as context:
-            await tokens_required(Response(), mocked_tokens())
+            await get_tokens(Response(), mocked_tokens())
 
         self.assertIn(
             'Forbidden: refresh token expired', str(context.exception)
         )
         self.assertEqual(403, context.exception.status_code)
+
+    async def test_get_tokens_missing_session(self):
+        with self.assertRaises(InvalidTokenException) as context:
+            await get_tokens(Response(), None)  # Missing session
+
+        self.assertIn(
+            'Unauthorized: missing session information', str(context.exception)
+        )
+        self.assertEqual(401, context.exception.status_code)

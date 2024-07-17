@@ -4,7 +4,7 @@ from unittest.mock import patch
 from fastapi.testclient import TestClient
 
 from api.infrastructure.authentication import KeycloakTokenValidator
-from api.infrastructure.dependencies import COOKIE_NAME, tokens_required
+from api.infrastructure.dependencies import COOKIE_NAME, get_tokens
 from api.main import app
 from api.services.encryption import SessionEncryptor
 
@@ -45,7 +45,7 @@ class TestApiRoutes(TestCase):
     @patch.object(KeycloakTokenValidator, 'logout')
     def test_logout(self, mock_keycloak_logout):
         mock_keycloak_logout.return_value = None
-        app.dependency_overrides[tokens_required] = mocked_tokens
+        app.dependency_overrides[get_tokens] = mocked_tokens
 
         self.client.cookies[COOKIE_NAME] = 'mocked'
         response = self.client.get('/logout', follow_redirects=False)

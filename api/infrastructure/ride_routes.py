@@ -62,9 +62,9 @@ async def get_all_by_user_id(
 
 @ride_router.get('/by_location', status_code=status.HTTP_200_OK)
 async def get_all_by_location(
-    origin: str,
-    destination: str,
     departure: date,
+    origin: Optional[str] = None,
+    destination: Optional[str] = None,
 ) -> Response:
     query_params = {
         'origin': origin,

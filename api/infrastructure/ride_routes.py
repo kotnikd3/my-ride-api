@@ -42,13 +42,6 @@ async def make_request(
     )
 
 
-@ride_router.get('', status_code=status.HTTP_200_OK)
-async def get_all() -> Response:
-    target_url = f'{RIDE_SERVICE}/ride'
-
-    return await make_request('GET', target_url)
-
-
 @ride_router.get('/by_user', status_code=status.HTTP_200_OK)
 async def get_all_by_user_id(
     tokens: Annotated[dict, Depends(get_tokens)],

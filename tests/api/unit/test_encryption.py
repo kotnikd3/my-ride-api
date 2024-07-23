@@ -1,45 +1,46 @@
-from unittest import TestCase
+import pytest
 
 from api.services.encryption import SessionEncryptor
 from api.services.exceptions import InvalidTokenException
 
 
-class TestSessionEncryptor(TestCase):
-    @classmethod
-    def setUpClass(cls) -> None:
-        cls.session_encryptor = SessionEncryptor()
+def test_encrypt():
+    session_encryptor = SessionEncryptor()
 
-    @classmethod
-    def tearDownClass(cls) -> None:
-        pass
+    encrypted_data = session_encryptor.encrypt(data={'foo': 'bar'})
+    assert isinstance(encrypted_data, str)
 
-    def test_encrypt(self):
-        encrypted_data = self.session_encryptor.encrypt(data={'foo': 'bar'})
-        self.assertIsInstance(encrypted_data, str)
+    encrypted_data = session_encryptor.encrypt(data={})
+    assert isinstance(encrypted_data, str)
 
-        encrypted_data = self.session_encryptor.encrypt(data={})
-        self.assertIsInstance(encrypted_data, str)
 
-    def test_encrypt_returns_exception(self):
-        with self.assertRaises(InvalidTokenException) as context:
-            self.session_encryptor.encrypt(data='NOT DICT')
+def test_encrypt_returns_exception():
+    session_encryptor = SessionEncryptor()
 
-        self.assertIn('Only dicts can be encrypted', str(context.exception))
+    with pytest.raises(InvalidTokenException) as context:
+        session_encryptor.encrypt(data='NOT DICT')
 
-    def test_decrypt(self):
-        encrypted_data = self.session_encryptor.encrypt(data={'foo': 'bar'})
-        decrypted_data = self.session_encryptor.decrypt(session=encrypted_data)
+    assert 'Only dicts can be encrypted' in str(context.value)
 
-        self.assertIsInstance(decrypted_data, dict)
 
-        encrypted_data = self.session_encryptor.encrypt(data={})
-        decrypted_data = self.session_encryptor.decrypt(session=encrypted_data)
+def test_decrypt():
+    session_encryptor = SessionEncryptor()
 
-        self.assertIsInstance(decrypted_data, dict)
+    encrypted_data = session_encryptor.encrypt(data={'foo': 'bar'})
+    decrypted_data = session_encryptor.decrypt(session=encrypted_data)
 
-    def test_decrypt_returns_exception(self):
-        # Check if 'Expired' is in the exception message
-        with self.assertRaises(InvalidTokenException) as context:
-            self.session_encryptor.decrypt(session={'foo': 'bar'})
+    assert isinstance(decrypted_data, dict)
 
-        self.assertIn('Only strings can be decrypted', str(context.exception))
+    encrypted_data = session_encryptor.encrypt(data={})
+    decrypted_data = session_encryptor.decrypt(session=encrypted_data)
+
+    assert isinstance(decrypted_data, dict)
+
+
+def test_decrypt_returns_exception():
+    session_encryptor = SessionEncryptor()
+
+    with pytest.raises(InvalidTokenException) as context:
+        session_encryptor.decrypt(session={'foo': 'bar'})
+
+    assert 'Only strings can be decrypted' in str(context.value)

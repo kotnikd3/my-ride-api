@@ -1,8 +1,6 @@
-from unittest import IsolatedAsyncioTestCase
-from unittest.mock import patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
-from httpx import AsyncClient
 
 from api.infrastructure.api_routes import front_end
 from api.infrastructure.authentication import KeycloakTokenValidator
@@ -18,52 +16,45 @@ def mocked_tokens():
     }
 
 
-# TODO refactor tests, make tests with pytest
-class TestApiRoutes(IsolatedAsyncioTestCase):
-    async def asyncSetUp(self):
-        self.client = AsyncClient(app=app)
+@pytest.mark.anyio
+@patch.object(KeycloakTokenValidator, 'auth_url', new_callable=AsyncMock)
+async def test_login(mock_keycloak_auth_url, async_client):
+    mock_keycloak_auth_url.return_value = '/openid-connect'
 
-    async def asyncTearDown(self) -> None:
-        await self.client.aclose()
-        app.dependency_overrides = {}
+    response = await async_client.get(url='/login', follow_redirects=False)
 
-    @pytest.mark.skip('Not yet implemented')
-    @patch.object(KeycloakTokenValidator, 'logout')
-    async def test_logout(self, mock_keycloak_logout):
-        mock_keycloak_logout.return_value = None
-        app.dependency_overrides[get_tokens] = mocked_tokens
+    assert 307 == response.status_code
+    assert response.is_redirect
+    assert '/openid-connect' in response.headers['location']
 
-        self.client.cookies[COOKIE_NAME] = 'mocked'
-        response = await self.client.get('/logout', follow_redirects=False)
 
-        self.assertEqual(302, response.status_code)
-        self.assertTrue(response.is_redirect)
-        self.assertEqual(front_end, response.headers['location'])
-        self.assertNotIn(COOKIE_NAME, response.cookies)
+@pytest.mark.anyio
+@patch.object(KeycloakTokenValidator, 'logout', new_callable=AsyncMock)
+async def test_logout(mock_keycloak_logout, async_client):
+    mock_keycloak_logout.return_value = None
+    app.dependency_overrides[get_tokens] = mocked_tokens
 
-    @pytest.mark.skip('Not yet implemented')
-    @patch.object(KeycloakTokenValidator, 'get_tokens')
-    async def test_authorize(self, mock_keycloak_get_tokens):
-        mock_keycloak_get_tokens.return_value = mocked_tokens()
+    async_client.cookies[COOKIE_NAME] = 'mocked'
+    response = await async_client.get('/logout', follow_redirects=False)
 
-        response = await self.client.get(
-            url='/authorize',
-            params={'code': 'some_code'},
-            follow_redirects=False,
-        )
+    assert 302 == response.status_code
+    assert response.is_redirect
+    assert front_end == response.headers['location']
+    assert COOKIE_NAME not in response.cookies
 
-        self.assertEqual(302, response.status_code)
-        self.assertTrue(response.is_redirect)
-        self.assertEqual(front_end, response.headers['location'])
-        self.assertIn(COOKIE_NAME, response.cookies)
 
-    @pytest.mark.skip('Not yet implemented')
-    @patch.object(KeycloakTokenValidator, 'auth_url')
-    async def test_login(self, mock_keycloak_auth_url):
-        mock_keycloak_auth_url.return_value = '/openid-connect'
+@pytest.mark.anyio
+@patch.object(KeycloakTokenValidator, 'get_tokens', new_callable=AsyncMock)
+async def test_authorize(mock_keycloak_get_tokens, async_client):
+    mock_keycloak_get_tokens.return_value = mocked_tokens()
 
-        response = await self.client.get(url='/login', follow_redirects=False)
+    response = await async_client.get(
+        url='/authorize',
+        params={'code': 'some_code'},
+        follow_redirects=False,
+    )
 
-        self.assertEqual(307, response.status_code)
-        self.assertTrue(response.is_redirect)
-        self.assertIn('/openid-connect', response.headers['location'])
+    assert 302 == response.status_code
+    assert response.is_redirect
+    assert front_end == response.headers['location']
+    assert COOKIE_NAME in response.cookies

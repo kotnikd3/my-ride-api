@@ -26,10 +26,11 @@ class KeycloakTokenValidator:
             client_secret_key=OAUTH_SECRET_KEY,
         )
 
-        self._set_public_key()
+        self._public_key = None
 
     def _set_public_key(self) -> None:
         try:
+            # TODO use a_public_key() from python-keycloak instead
             _public_key = self.keycloak.public_key()
         except KeycloakConnectionError:
             self._public_key = None
@@ -44,15 +45,17 @@ class KeycloakTokenValidator:
     @property
     def public_key(self):
         if not self._public_key:
-            # If Keycloak is not reachable when __init(self)__ is executed, try
-            # reaching it (later) on every request
             self._set_public_key()
+
+            # Try again
+            if not self._public_key:
+                raise ServiceUnavailableException(
+                    'Service Keycloak is unavailable'
+                )
+
         return self._public_key
 
-    def authenticate_token(self, access_token: str) -> dict:
-        if not self.public_key:
-            raise ServiceUnavailableException('Service Keycloak is unavailable')
-
+    async def authenticate_token(self, access_token: str) -> dict:
         check_claims = {
             'exp': None,
             'jti': None,
@@ -61,7 +64,7 @@ class KeycloakTokenValidator:
         }
 
         try:
-            claims = self.keycloak.decode_token(
+            claims = await self.keycloak.a_decode_token(
                 token=access_token,
                 key=self.public_key,
                 check_claims=check_claims,
@@ -81,9 +84,9 @@ class KeycloakTokenValidator:
         else:
             return claims
 
-    def get_tokens(self, code: str, redirect_uri: str) -> dict:
+    async def get_tokens(self, code: str, redirect_uri: str) -> dict:
         try:
-            return self.keycloak.token(
+            return await self.keycloak.a_token(
                 code=code,
                 grant_type='authorization_code',
                 redirect_uri=redirect_uri,
@@ -91,24 +94,26 @@ class KeycloakTokenValidator:
         except KeycloakConnectionError:
             raise ServiceUnavailableException('Service Keycloak is unavailable')
 
-    def logout(self, refresh_token: str) -> None:
+    async def logout(self, refresh_token: str) -> None:
         try:
-            self.keycloak.logout(refresh_token=refresh_token)
+            await self.keycloak.a_logout(refresh_token=refresh_token)
         except KeycloakConnectionError:
             pass
 
-    def auth_url(self, scope: str, redirect_uri: str) -> str:
+    async def auth_url(self, scope: str, redirect_uri: str) -> str:
         try:
-            return self.keycloak.auth_url(
+            return await self.keycloak.a_auth_url(
                 scope=scope,
                 redirect_uri=redirect_uri,
             )
         except KeycloakConnectionError:
             raise ServiceUnavailableException('Service Keycloak is unavailable')
 
-    def fetch_new_tokens(self, refresh_token: str) -> dict:
+    async def fetch_new_tokens(self, refresh_token: str) -> dict:
         try:
-            return self.keycloak.refresh_token(refresh_token=refresh_token)
+            return await self.keycloak.a_refresh_token(
+                refresh_token=refresh_token,
+            )
         except KeycloakPostError:
             raise InvalidTokenException(
                 'Forbidden: refresh token expired',

@@ -17,10 +17,10 @@ front_end = 'http://localhost:5173/'
 
 
 @api_rooter.get('/login', status_code=status.HTTP_307_TEMPORARY_REDIRECT)
-def login(request: Request) -> RedirectResponse:
+async def login(request: Request) -> RedirectResponse:
     redirect_uri = str(request.url_for('authorize'))
 
-    auth_url = keycloak_validator.auth_url(
+    auth_url = await keycloak_validator.auth_url(
         redirect_uri=redirect_uri,
         scope='openid email',
     )
@@ -29,13 +29,13 @@ def login(request: Request) -> RedirectResponse:
 
 
 @api_rooter.get('/authorize', status_code=status.HTTP_302_FOUND)
-def authorize(request: Request) -> RedirectResponse:
+async def authorize(request: Request) -> RedirectResponse:
     # Get the authorization code from the callback URL
     code = request.query_params.get('code')
     redirect_uri = str(request.url_for('authorize'))
 
     # Exchange the authorization code for a token
-    tokens = keycloak_validator.get_tokens(
+    tokens = await keycloak_validator.get_tokens(
         code=code,
         redirect_uri=redirect_uri,
     )
@@ -60,10 +60,10 @@ def authorize(request: Request) -> RedirectResponse:
 
 
 @api_rooter.get('/logout', status_code=status.HTTP_302_FOUND)
-def logout(
+async def logout(
     tokens: Annotated[dict, Depends(get_tokens)],
 ) -> RedirectResponse:
-    keycloak_validator.logout(refresh_token=tokens['refresh_token'])
+    await keycloak_validator.logout(refresh_token=tokens['refresh_token'])
 
     response = RedirectResponse(url=front_end, status_code=302)
     response.delete_cookie(key=COOKIE_NAME)

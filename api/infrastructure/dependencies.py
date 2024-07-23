@@ -36,12 +36,12 @@ class GetTokens:
     ) -> Optional[dict]:
         if tokens:
             try:
-                keycloak_validator.authenticate_token(
+                await keycloak_validator.authenticate_token(
                     access_token=tokens['access_token'],
                 )
                 return tokens
             except AccessTokenExpiredError:
-                new_tokens = keycloak_validator.fetch_new_tokens(
+                new_tokens = await keycloak_validator.fetch_new_tokens(
                     refresh_token=tokens['refresh_token'],
                 )
 

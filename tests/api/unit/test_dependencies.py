@@ -1,6 +1,5 @@
-from unittest import IsolatedAsyncioTestCase
 from unittest.mock import patch
-
+import pytest
 from fastapi import Response
 
 from api.infrastructure.authentication import KeycloakTokenValidator
@@ -24,90 +23,93 @@ def mocked_tokens():
     }
 
 
-class TestDependencies(IsolatedAsyncioTestCase):
-    @patch.object(SessionEncryptor, 'decrypt')
-    async def test_get_session_or_none(self, mock_decrypt):
-        mock_decrypt.return_value = mocked_tokens()
+@pytest.mark.asyncio
+@patch.object(SessionEncryptor, 'decrypt')
+async def test_get_session_or_none(mock_decrypt):
+    mock_decrypt.return_value = mocked_tokens()
 
-        session = await get_session_or_none('encrypted_string')
-        self.assertEqual(session, mocked_tokens())
+    session = await get_session_or_none('encrypted_string')
+    assert mocked_tokens() == session
 
-    async def test_get_session_or_none_session_not_valid(self):
-        with self.assertRaises(InvalidTokenException) as context:
-            await get_session_or_none('something')
 
-        self.assertIn('InvalidToken()', str(context.exception))
-        self.assertEqual(403, context.exception.status_code)
+@pytest.mark.asyncio
+async def test_get_session_or_none_session_not_valid():
+    with pytest.raises(InvalidTokenException) as context:
+        await get_session_or_none('something')
 
-    @patch.object(KeycloakTokenValidator, 'authenticate_token')
-    async def test_get_tokens(self, mock_keycloak_authenticate_token):
-        mock_keycloak_authenticate_token.return_value = None
+    assert 'InvalidToken()' in str(context.value)
+    assert 403 == context.value.status_code
 
-        tokens = await get_tokens(Response(), mocked_tokens())
-        self.assertEqual(tokens, mocked_tokens())
 
-    @patch.object(KeycloakTokenValidator, 'fetch_new_tokens')
-    @patch.object(KeycloakTokenValidator, 'authenticate_token')
-    async def test_get_tokens_new_tokens(
-        self,
-        mock_keycloak_authenticate_token,
-        mock_keycloak_fetch_new_tokens,
-    ):
-        mock_keycloak_authenticate_token.side_effect = AccessTokenExpiredError
-        mock_keycloak_fetch_new_tokens.return_value = mocked_tokens()
+@pytest.mark.asyncio
+@patch.object(KeycloakTokenValidator, 'authenticate_token')
+async def test_get_tokens(mock_keycloak_authenticate_token):
+    mock_keycloak_authenticate_token.return_value = None
 
-        response = Response()
-        new_tokens = await get_tokens(response, mocked_tokens())
-        expected_tokens = {
-            'access_token': 'mocked_access_token',
-            'refresh_token': 'mocked_refresh_token',
-        }
+    tokens = await get_tokens(Response(), mocked_tokens())
+    assert mocked_tokens() == tokens
 
-        self.assertIn(COOKIE_NAME, response.headers['set-cookie'])
-        self.assertEqual(expected_tokens, new_tokens)
 
-    @patch.object(KeycloakTokenValidator, 'authenticate_token')
-    async def test_get_tokens_not_valid_access_token(
-        self,
-        mock_keycloak_authenticate_token,
-    ):
-        mock_keycloak_authenticate_token.side_effect = InvalidTokenException(
-            'Forbidden: access token is not valid', status_code=403
-        )
+@pytest.mark.asyncio
+@patch.object(KeycloakTokenValidator, 'fetch_new_tokens')
+@patch.object(KeycloakTokenValidator, 'authenticate_token')
+async def test_get_tokens_new_tokens(
+    mock_keycloak_authenticate_token,
+    mock_keycloak_fetch_new_tokens,
+):
+    mock_keycloak_authenticate_token.side_effect = AccessTokenExpiredError
+    mock_keycloak_fetch_new_tokens.return_value = mocked_tokens()
 
-        with self.assertRaises(InvalidTokenException) as context:
-            await get_tokens(Response(), mocked_tokens())
+    response = Response()
+    new_tokens = await get_tokens(response, mocked_tokens())
+    expected_tokens = {
+        'access_token': 'mocked_access_token',
+        'refresh_token': 'mocked_refresh_token',
+    }
 
-        self.assertIn(
-            'Forbidden: access token is not valid', str(context.exception)
-        )
-        self.assertEqual(403, context.exception.status_code)
+    assert COOKIE_NAME in response.headers['set-cookie']
+    assert expected_tokens == new_tokens
 
-    @patch.object(KeycloakTokenValidator, 'fetch_new_tokens')
-    @patch.object(KeycloakTokenValidator, 'authenticate_token')
-    async def test_get_tokens_refresh_token_expired(
-        self,
-        mock_keycloak_authenticate_token,
-        mock_keycloak_fetch_new_tokens,
-    ):
-        mock_keycloak_authenticate_token.side_effect = AccessTokenExpiredError
-        mock_keycloak_fetch_new_tokens.side_effect = InvalidTokenException(
-            'Forbidden: refresh token expired', status_code=403
-        )
 
-        with self.assertRaises(InvalidTokenException) as context:
-            await get_tokens(Response(), mocked_tokens())
+@pytest.mark.asyncio
+@patch.object(KeycloakTokenValidator, 'authenticate_token')
+async def test_get_tokens_not_valid_access_token(
+    mock_keycloak_authenticate_token,
+):
+    mock_keycloak_authenticate_token.side_effect = InvalidTokenException(
+        'Forbidden: access token is not valid', status_code=403
+    )
 
-        self.assertIn(
-            'Forbidden: refresh token expired', str(context.exception)
-        )
-        self.assertEqual(403, context.exception.status_code)
+    with pytest.raises(InvalidTokenException) as context:
+        await get_tokens(Response(), mocked_tokens())
 
-    async def test_get_tokens_missing_session(self):
-        with self.assertRaises(InvalidTokenException) as context:
-            await get_tokens(Response(), None)  # Missing session
+    assert 'Forbidden: access token is not valid' in str(context.value)
+    assert 403 == context.value.status_code
 
-        self.assertIn(
-            'Unauthorized: missing session information', str(context.exception)
-        )
-        self.assertEqual(401, context.exception.status_code)
+
+@pytest.mark.asyncio
+@patch.object(KeycloakTokenValidator, 'fetch_new_tokens')
+@patch.object(KeycloakTokenValidator, 'authenticate_token')
+async def test_get_tokens_refresh_token_expired(
+    mock_keycloak_authenticate_token,
+    mock_keycloak_fetch_new_tokens,
+):
+    mock_keycloak_authenticate_token.side_effect = AccessTokenExpiredError
+    mock_keycloak_fetch_new_tokens.side_effect = InvalidTokenException(
+        'Forbidden: refresh token expired', status_code=403
+    )
+
+    with pytest.raises(InvalidTokenException) as context:
+        await get_tokens(Response(), mocked_tokens())
+
+    assert 'Forbidden: refresh token expired' in str(context.value)
+    assert 403 == context.value.status_code
+
+
+@pytest.mark.asyncio
+async def test_get_tokens_missing_session():
+    with pytest.raises(InvalidTokenException) as context:
+        await get_tokens(Response(), None)  # Missing session
+
+    assert 'Unauthorized: missing session information' in str(context.value)
+    assert 401 == context.value.status_code

@@ -18,6 +18,7 @@ def mocked_tokens():
     }
 
 
+# TODO refactor tests, make tests with pytest
 class TestApiRoutes(IsolatedAsyncioTestCase):
     async def asyncSetUp(self):
         self.client = AsyncClient(app=app)

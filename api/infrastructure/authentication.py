@@ -28,10 +28,9 @@ class KeycloakTokenValidator:
 
         self._public_key = None
 
-    def _set_public_key(self) -> None:
+    async def _set_public_key(self) -> None:
         try:
-            # TODO use a_public_key() from python-keycloak instead
-            _public_key = self.keycloak.public_key()
+            _public_key = await self.keycloak.a_public_key()
         except KeycloakConnectionError:
             self._public_key = None
         else:
@@ -42,10 +41,9 @@ class KeycloakTokenValidator:
             )
             self._public_key = jwk.JWK.from_pem(_public_key.encode('utf-8'))
 
-    @property
-    def public_key(self):
+    async def public_key(self):
         if not self._public_key:
-            self._set_public_key()
+            await self._set_public_key()
 
             # Try again
             if not self._public_key:
@@ -66,7 +64,7 @@ class KeycloakTokenValidator:
         try:
             claims = await self.keycloak.a_decode_token(
                 token=access_token,
-                key=self.public_key,
+                key=await self.public_key(),
                 check_claims=check_claims,
             )
         except JWTExpired as error:

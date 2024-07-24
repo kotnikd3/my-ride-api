@@ -15,7 +15,7 @@ def mocked_tokens():
     }
 
 
-@pytest.mark.anyio
+@pytest.mark.asyncio
 @patch.object(KeycloakTokenValidator, 'auth_url', new_callable=AsyncMock)
 async def test_login(mock_keycloak_auth_url, async_client):
     mock_keycloak_auth_url.return_value = '/openid-connect'
@@ -27,7 +27,7 @@ async def test_login(mock_keycloak_auth_url, async_client):
     assert '/openid-connect' in response.headers['location']
 
 
-@pytest.mark.anyio
+@pytest.mark.asyncio
 @patch.object(KeycloakTokenValidator, 'logout', new_callable=AsyncMock)
 async def test_logout(mock_keycloak_logout, async_client):
     mock_keycloak_logout.return_value = None
@@ -44,7 +44,7 @@ async def test_logout(mock_keycloak_logout, async_client):
     assert COOKIE_NAME not in response.cookies
 
 
-@pytest.mark.anyio
+@pytest.mark.asyncio
 @patch.object(KeycloakTokenValidator, 'get_tokens', new_callable=AsyncMock)
 async def test_authorize(mock_keycloak_get_tokens, async_client):
     mock_keycloak_get_tokens.return_value = mocked_tokens()

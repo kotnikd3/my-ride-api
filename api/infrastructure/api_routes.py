@@ -21,10 +21,11 @@ async def login(request: Request) -> RedirectResponse:
     redirect_uri = str(request.url_for('authorize'))
 
     auth_url = await keycloak_validator.auth_url(
-        redirect_uri=redirect_uri,
         scope='openid email',
+        redirect_uri=redirect_uri,
     )
 
+    # Redirect user to auth server
     return RedirectResponse(url=auth_url)  # Status code = 307
 
 
@@ -47,6 +48,7 @@ async def authorize(request: Request) -> RedirectResponse:
     }
     encrypted_session = session_encryptor.encrypt(data=selected_tokens)
 
+    # Redirect user back to the front end app
     response = RedirectResponse(url=front_end, status_code=302)
     response.set_cookie(
         key=COOKIE_NAME,

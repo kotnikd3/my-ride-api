@@ -2,7 +2,6 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from api.infrastructure.api_routes import front_end
 from api.infrastructure.authentication import KeycloakTokenValidator
 from api.infrastructure.dependencies import COOKIE_NAME, get_tokens
 from api.main import app
@@ -35,11 +34,13 @@ async def test_logout(mock_keycloak_logout, async_client):
     app.dependency_overrides[get_tokens] = mocked_tokens
 
     async_client.cookies[COOKIE_NAME] = 'mocked'
-    response = await async_client.get('/logout', follow_redirects=False)
+    response = await async_client.get(
+        '/logout?frontend_uri=https://frontend', follow_redirects=False
+    )
 
     assert 302 == response.status_code
     assert response.is_redirect
-    assert front_end == response.headers['location']
+    assert 'https://frontend' == response.headers['location']
     assert COOKIE_NAME not in response.cookies
 
 
@@ -49,12 +50,12 @@ async def test_authorize(mock_keycloak_get_tokens, async_client):
     mock_keycloak_get_tokens.return_value = mocked_tokens()
 
     response = await async_client.get(
-        url='/authorize',
+        url='/authorize?frontend_uri=https://frontend',
         params={'code': 'some_code'},
         follow_redirects=False,
     )
 
     assert 302 == response.status_code
     assert response.is_redirect
-    assert front_end == response.headers['location']
+    assert 'https://frontend' == response.headers['location']
     assert COOKIE_NAME in response.cookies

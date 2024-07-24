@@ -1,7 +1,7 @@
 from decouple import config
 from jwcrypto import jwk
 from jwcrypto.jwt import JWException, JWTExpired
-from keycloak import KeycloakOpenID, KeycloakPostError
+from keycloak import KeycloakError, KeycloakOpenID
 from keycloak.exceptions import KeycloakConnectionError
 
 from api.services.exceptions import (
@@ -93,6 +93,11 @@ class KeycloakTokenValidator:
             )
         except KeycloakConnectionError:
             raise ServiceUnavailableException('Service Keycloak is unavailable')
+        except KeycloakError as error:
+            raise InvalidTokenException(
+                f'Forbidden: invalid code: {repr(error)}',
+                status_code=403,
+            )
 
     async def logout(self, refresh_token: str) -> None:
         try:
@@ -108,16 +113,21 @@ class KeycloakTokenValidator:
             )
         except KeycloakConnectionError:
             raise ServiceUnavailableException('Service Keycloak is unavailable')
+        except KeycloakError as error:
+            raise InvalidTokenException(
+                f'Forbidden: invalid redirect_uri: {repr(error)}',
+                status_code=403,
+            )
 
     async def fetch_new_tokens(self, refresh_token: str) -> dict:
         try:
             return await self.keycloak.a_refresh_token(
                 refresh_token=refresh_token,
             )
-        except KeycloakPostError:
+        except KeycloakConnectionError:
+            raise ServiceUnavailableException('Service Keycloak is unavailable')
+        except KeycloakError:
             raise InvalidTokenException(
                 'Forbidden: refresh token expired',
                 status_code=403,
             )
-        except KeycloakConnectionError:
-            raise ServiceUnavailableException('Service Keycloak is unavailable')

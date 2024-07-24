@@ -2,7 +2,7 @@ from unittest.mock import patch
 
 import pytest
 from jwcrypto import jwk, jwt
-from keycloak import KeycloakOpenID, KeycloakPostError
+from keycloak import KeycloakError, KeycloakOpenID
 
 from api.infrastructure.authentication import (
     OAUTH_CLIENT_ID,
@@ -164,7 +164,7 @@ async def test_fetch_new_tokens_success(mock_keycloak_refresh_token):
 @patch.object(KeycloakOpenID, 'a_refresh_token')
 async def test_fetch_new_tokens_failure(mock_keycloak_refresh_token):
     # Mock the keycloak instance and refresh_token method to raise an error
-    mock_keycloak_refresh_token.side_effect = KeycloakPostError()
+    mock_keycloak_refresh_token.side_effect = KeycloakError()
 
     validator = KeycloakTokenValidator()
 

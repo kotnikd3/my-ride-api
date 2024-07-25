@@ -3,6 +3,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, Request, status
 from fastapi.responses import RedirectResponse
 
+from api.domain.value_objects import TokenDataVO
 from api.infrastructure.dependencies import (
     COOKIE_NAME,
     get_tokens,
@@ -47,11 +48,11 @@ async def authorize(request: Request) -> RedirectResponse:
     )
 
     # Save session storage space
-    selected_tokens = {
+    data = {
         'access_token': tokens['access_token'],
         'refresh_token': tokens['refresh_token'],
     }
-    encrypted_session = session_encryptor.encrypt(data=selected_tokens)
+    encrypted_session = session_encryptor.encrypt(data=data)
 
     # Redirect user back to the front end app
     response = RedirectResponse(url=frontend_uri, status_code=302)
@@ -69,9 +70,9 @@ async def authorize(request: Request) -> RedirectResponse:
 @api_rooter.get('/logout', status_code=status.HTTP_302_FOUND)
 async def logout(
     request: Request,
-    tokens: Annotated[dict, Depends(get_tokens)],
+    tokens: Annotated[TokenDataVO, Depends(get_tokens)],
 ) -> RedirectResponse:
-    await keycloak_validator.logout(refresh_token=tokens['refresh_token'])
+    await keycloak_validator.logout(refresh_token=tokens.refresh_token)
 
     frontend_uri = request.query_params.get('frontend_uri')
     response = RedirectResponse(url=frontend_uri, status_code=302)

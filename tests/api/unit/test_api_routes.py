@@ -1,5 +1,6 @@
 from unittest.mock import AsyncMock, patch
 
+from api.domain.value_objects import TokenDataVO
 from api.infrastructure.authentication import KeycloakTokenValidator
 from api.infrastructure.dependencies import COOKIE_NAME, get_tokens
 from api.main import app
@@ -27,7 +28,13 @@ def test_login(mock_keycloak_auth_url, test_client):
 @patch.object(KeycloakTokenValidator, 'logout', new_callable=AsyncMock)
 def test_logout(mock_keycloak_logout, test_client):
     mock_keycloak_logout.return_value = None
-    app.dependency_overrides[get_tokens] = mocked_tokens
+    app.dependency_overrides[get_tokens] = lambda: TokenDataVO(
+        updated=True,
+        access_token=mocked_tokens()['access_token'],
+        refresh_token=mocked_tokens()['refresh_token'],
+        encrypted_session=None,
+        refresh_expires_in=mocked_tokens()['refresh_expires_in'],
+    )
 
     test_client.cookies[COOKIE_NAME] = 'mocked'
     response = test_client.get(

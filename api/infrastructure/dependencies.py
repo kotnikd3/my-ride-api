@@ -35,7 +35,11 @@ class GetTokens:
         response: Response,
         tokens: dict = Depends(get_session_or_none),
     ) -> Optional[TokenDataVO]:
-        """TODO"""
+        """If tokens exists and are valid, return old tokens.
+        If tokens exists and access token expired, use refresh token to retrieve
+        new tokens and return them.
+        If no tokens, but they are `mandatory`, return InvalidTokenException.
+        If no tokens and then are not mandatory, return None."""
         if tokens:
             try:
                 await keycloak_validator.authenticate_token(

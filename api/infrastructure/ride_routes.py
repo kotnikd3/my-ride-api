@@ -26,7 +26,8 @@ async def make_request(
     tokens: TokenDataVO = None,
     json: Dict[str, Any] = None,
 ) -> Response:
-    """TODO"""
+    """Send request to Ride API and return response.
+    If tokens has been updated, update cookies in the response."""
     headers = (
         {'Authorization': f'Bearer {tokens.access_token}'} if tokens else None
     )

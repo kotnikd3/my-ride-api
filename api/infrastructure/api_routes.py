@@ -72,7 +72,8 @@ async def logout(
     request: Request,
     tokens: Annotated[TokenDataVO, Depends(get_tokens)],
 ) -> RedirectResponse:
-    await keycloak_validator.logout(refresh_token=tokens.refresh_token)
+    if tokens:
+        await keycloak_validator.logout(refresh_token=tokens.refresh_token)
 
     frontend_uri = request.query_params.get('frontend_uri')
     response = RedirectResponse(url=frontend_uri, status_code=302)

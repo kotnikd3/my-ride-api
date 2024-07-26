@@ -1,18 +1,11 @@
-from datetime import date
 from typing import Annotated, Any, Dict, Optional
-from urllib.parse import urlencode
-from uuid import UUID
 
 import httpx
 from decouple import config
-from fastapi import APIRouter, Body, Depends, Response, status
+from fastapi import APIRouter, Body, Depends, Request, Response
 
 from api.domain.value_objects import TokenDataVO
-from api.infrastructure.dependencies import (
-    COOKIE_NAME,
-    get_tokens,
-    get_tokens_or_none,
-)
+from api.infrastructure.dependencies import COOKIE_NAME, get_tokens
 from api.services.exceptions import ServiceUnavailableException
 
 RIDE_SERVICE = config('RIDE_SERVICE')
@@ -20,14 +13,26 @@ RIDE_SERVICE = config('RIDE_SERVICE')
 ride_router = APIRouter(prefix='/ride', tags=['ride'])
 
 
-async def make_request(
-    method: str,
-    url: str,
-    tokens: TokenDataVO = None,
-    json: Dict[str, Any] = None,
+@ride_router.api_route(
+    '/{path:path}',
+    methods=['GET', 'POST', 'PUT', 'DELETE'],
+)
+async def proxy_request(
+    request: Request,
+    path: str,
+    tokens: Annotated[TokenDataVO, Depends(get_tokens)],
+    body: Optional[Dict[str, Any]] = Body(None),
 ) -> Response:
     """Send request to Ride API and return response.
-    If tokens has been updated, update cookies in the response."""
+    If tokens have been updated, update cookies in the response."""
+
+    # Construct the target URL
+    target_url = (
+        f'{RIDE_SERVICE}/ride/{path}' if path else f'{RIDE_SERVICE}/ride'
+    )
+    if request.query_params:
+        target_url = f'{target_url}?{request.query_params}'
+
     headers = (
         {'Authorization': f'Bearer {tokens.access_token}'} if tokens else None
     )
@@ -35,7 +40,11 @@ async def make_request(
     try:
         async with httpx.AsyncClient() as client:
             response = await client.request(
-                method=method, url=url, headers=headers, json=json, timeout=4
+                method=request.method,
+                url=target_url,
+                headers=headers,
+                json=body,
+                timeout=4,
             )
     except (httpx.TimeoutException, httpx.ConnectError) as error:
         raise ServiceUnavailableException(
@@ -58,74 +67,3 @@ async def make_request(
         )
 
     return response
-
-
-@ride_router.get('/by_user', status_code=status.HTTP_200_OK)
-async def get_all_by_user_id(
-    tokens: Annotated[TokenDataVO, Depends(get_tokens)],
-) -> Response:
-    target_url = f'{RIDE_SERVICE}/ride/by_user'
-
-    return await make_request(method='GET', url=target_url, tokens=tokens)
-
-
-@ride_router.get('/by_location', status_code=status.HTTP_200_OK)
-async def get_all_by_location(
-    tokens: Annotated[TokenDataVO, Depends(get_tokens_or_none)],
-    departure: date,
-    origin: Optional[str] = None,
-    destination: Optional[str] = None,
-) -> Response:
-    query_params = {
-        'origin': origin,
-        'destination': destination,
-        'departure': departure.isoformat(),  # Convert date to ISO format string
-    }
-    target_url = f"{RIDE_SERVICE}/ride/by_location?{urlencode(query_params)}"
-
-    return await make_request(method='GET', url=target_url, tokens=tokens)
-
-
-@ride_router.get('/{ride_id}')
-async def get_one_by_id(
-    ride_id: UUID,
-    tokens: Annotated[TokenDataVO, Depends(get_tokens_or_none)],
-) -> Response:
-    target_url = f'{RIDE_SERVICE}/ride/{ride_id}'
-
-    return await make_request(method='GET', url=target_url, tokens=tokens)
-
-
-@ride_router.post('', status_code=status.HTTP_201_CREATED)
-async def create(
-    body: Annotated[dict, Body],
-    tokens: Annotated[TokenDataVO, Depends(get_tokens)],
-) -> Response:
-    target_url = f'{RIDE_SERVICE}/ride'
-
-    return await make_request(
-        method='POST', url=target_url, tokens=tokens, json=body
-    )
-
-
-@ride_router.put('/{ride_id}', status_code=status.HTTP_200_OK)
-async def put(
-    ride_id: UUID,
-    body: Annotated[dict, Body],
-    tokens: Annotated[TokenDataVO, Depends(get_tokens)],
-) -> Response:
-    target_url = f'{RIDE_SERVICE}/ride/{ride_id}'
-
-    return await make_request(
-        method='PUT', url=target_url, tokens=tokens, json=body
-    )
-
-
-@ride_router.delete('/{ride_id}', status_code=status.HTTP_204_NO_CONTENT)
-async def delete(
-    ride_id: UUID,
-    tokens: Annotated[TokenDataVO, Depends(get_tokens)],
-) -> Response:
-    target_url = f'{RIDE_SERVICE}/ride/{ride_id}'
-
-    return await make_request(method='DELETE', url=target_url, tokens=tokens)

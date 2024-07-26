@@ -36,7 +36,6 @@ def test_logout(mock_keycloak_logout, test_client):
         refresh_expires_in=mocked_tokens()['refresh_expires_in'],
     )
 
-    test_client.cookies[COOKIE_NAME] = 'mocked'
     response = test_client.get(
         '/logout?frontend_uri=https://frontend', follow_redirects=False
     )

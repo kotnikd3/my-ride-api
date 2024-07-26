@@ -1,7 +1,6 @@
 from unittest.mock import patch
 
 import pytest
-from fastapi import Response
 
 from api.domain.value_objects import TokenDataVO
 from api.infrastructure.authentication import KeycloakTokenValidator
@@ -40,11 +39,17 @@ async def test_get_session_or_none_session_not_valid():
 
 
 @pytest.mark.asyncio
+async def test_get_tokens_no_tokens():
+    result = await get_tokens(None)
+    assert not result
+
+
+@pytest.mark.asyncio
 @patch.object(KeycloakTokenValidator, 'authenticate_token')
 async def test_get_tokens(mock_keycloak_authenticate_token):
     mock_keycloak_authenticate_token.return_value = None
 
-    tokens = await get_tokens(Response(), mocked_tokens())
+    tokens = await get_tokens(mocked_tokens())
     expected = TokenDataVO(
         updated=False,
         access_token=mocked_tokens()['access_token'],
@@ -65,8 +70,7 @@ async def test_get_tokens_new_tokens(
     mock_keycloak_authenticate_token.side_effect = AccessTokenExpiredError
     mock_keycloak_fetch_new_tokens.return_value = mocked_tokens()
 
-    response = Response()
-    result = await get_tokens(response, mocked_tokens())
+    result = await get_tokens(mocked_tokens())
     expected = TokenDataVO(
         updated=True,
         access_token=mocked_tokens()['access_token'],
@@ -91,7 +95,7 @@ async def test_get_tokens_not_valid_access_token(
     )
 
     with pytest.raises(InvalidTokenException) as context:
-        await get_tokens(Response(), mocked_tokens())
+        await get_tokens(mocked_tokens())
 
     assert 'Forbidden: access token is not valid' in str(context.value)
     assert 403 == context.value.status_code
@@ -110,16 +114,7 @@ async def test_get_tokens_refresh_token_expired(
     )
 
     with pytest.raises(InvalidTokenException) as context:
-        await get_tokens(Response(), mocked_tokens())
+        await get_tokens(mocked_tokens())
 
     assert 'Forbidden: refresh token expired' in str(context.value)
     assert 403 == context.value.status_code
-
-
-@pytest.mark.asyncio
-async def test_get_tokens_missing_session():
-    with pytest.raises(InvalidTokenException) as context:
-        await get_tokens(Response(), None)  # Missing session
-
-    assert 'Unauthorized: missing session information' in str(context.value)
-    assert 401 == context.value.status_code

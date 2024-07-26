@@ -85,7 +85,7 @@ async def get_all_by_location(
     return await make_request('GET', target_url)
 
 
-@ride_router.get('/{ride_id}', status_code=status.HTTP_200_OK)
+@ride_router.get('/{ride_id}')
 async def get_one_by_id(
     ride_id: UUID,
     tokens: Annotated[TokenDataVO, Depends(get_tokens_or_none)],
@@ -95,7 +95,7 @@ async def get_one_by_id(
     return await make_request('GET', target_url, tokens=tokens)
 
 
-@ride_router.post('')
+@ride_router.post('', status_code=status.HTTP_201_CREATED)
 async def create(
     body: Annotated[dict, Body],
     tokens: Annotated[TokenDataVO, Depends(get_tokens)],

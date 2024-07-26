@@ -66,11 +66,12 @@ async def get_all_by_user_id(
 ) -> Response:
     target_url = f'{RIDE_SERVICE}/ride/by_user'
 
-    return await make_request('GET', target_url, tokens=tokens)
+    return await make_request(method='GET', url=target_url, tokens=tokens)
 
 
 @ride_router.get('/by_location', status_code=status.HTTP_200_OK)
 async def get_all_by_location(
+    tokens: Annotated[TokenDataVO, Depends(get_tokens_or_none)],
     departure: date,
     origin: Optional[str] = None,
     destination: Optional[str] = None,
@@ -82,7 +83,7 @@ async def get_all_by_location(
     }
     target_url = f"{RIDE_SERVICE}/ride/by_location?{urlencode(query_params)}"
 
-    return await make_request('GET', target_url)
+    return await make_request(method='GET', url=target_url, tokens=tokens)
 
 
 @ride_router.get('/{ride_id}')
@@ -92,7 +93,7 @@ async def get_one_by_id(
 ) -> Response:
     target_url = f'{RIDE_SERVICE}/ride/{ride_id}'
 
-    return await make_request('GET', target_url, tokens=tokens)
+    return await make_request(method='GET', url=target_url, tokens=tokens)
 
 
 @ride_router.post('', status_code=status.HTTP_201_CREATED)
@@ -102,7 +103,9 @@ async def create(
 ) -> Response:
     target_url = f'{RIDE_SERVICE}/ride'
 
-    return await make_request('POST', target_url, tokens=tokens, json=body)
+    return await make_request(
+        method='POST', url=target_url, tokens=tokens, json=body
+    )
 
 
 @ride_router.put('/{ride_id}', status_code=status.HTTP_200_OK)
@@ -113,7 +116,9 @@ async def put(
 ) -> Response:
     target_url = f'{RIDE_SERVICE}/ride/{ride_id}'
 
-    return await make_request('PUT', target_url, tokens=tokens, json=body)
+    return await make_request(
+        method='PUT', url=target_url, tokens=tokens, json=body
+    )
 
 
 @ride_router.delete('/{ride_id}', status_code=status.HTTP_204_NO_CONTENT)
@@ -123,4 +128,4 @@ async def delete(
 ) -> Response:
     target_url = f'{RIDE_SERVICE}/ride/{ride_id}'
 
-    return await make_request('DELETE', target_url, tokens=tokens)
+    return await make_request(method='DELETE', url=target_url, tokens=tokens)

@@ -23,6 +23,8 @@ async def get_session_or_none(
     return None
 
 
+# TODO use http middleware for token rotation instead
+#  use `response.set_cookie()` in one place only
 async def get_tokens(
     tokens: Annotated[Optional[dict], Depends(get_session_or_none)],
 ) -> Optional[TokenDataVO]:

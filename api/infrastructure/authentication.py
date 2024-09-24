@@ -15,7 +15,6 @@ OAUTH_REALM_NAME = config('OAUTH_REALM_NAME')
 OAUTH_CLIENT_ID = config('OAUTH_CLIENT_ID')
 OAUTH_SECRET_KEY = config('OAUTH_SECRET_KEY')
 OAUTH_ISSUER_URL = config('OAUTH_ISSUER_URL')
-OAUTH_REALM_URL = f'{OAUTH_ISSUER_URL}/realms/{OAUTH_REALM_NAME}'
 
 
 class KeycloakTokenValidator:
@@ -59,7 +58,7 @@ class KeycloakTokenValidator:
             'exp': None,
             'jti': None,
             'aud': OAUTH_CLIENT_ID,
-            'iss': OAUTH_REALM_URL,
+            'iss': OAUTH_ISSUER_URL,
         }
 
         try:

@@ -6,7 +6,7 @@ from keycloak import KeycloakError, KeycloakOpenID
 
 from api.infrastructure.authentication import (
     OAUTH_CLIENT_ID,
-    OAUTH_REALM_URL,
+    OAUTH_ISSUER_URL,
     KeycloakTokenValidator,
 )
 from api.services.exceptions import (
@@ -42,7 +42,7 @@ async def test_authenticate_valid_token():
         'exp': 9999999999,  # Max date
         'jti': 'The unique identifier for this token',
         'aud': OAUTH_CLIENT_ID,
-        'iss': OAUTH_REALM_URL,
+        'iss': OAUTH_ISSUER_URL,
         'some': 'payload',
     }
     public_jwk, private_jwk = _create_public_private_jwk_keys()
@@ -61,7 +61,7 @@ async def test_authenticate_expired_token():
         'exp': 1000000000,  # Expired
         'jti': 'The unique identifier for this token',
         'aud': OAUTH_CLIENT_ID,
-        'iss': OAUTH_REALM_URL,
+        'iss': OAUTH_ISSUER_URL,
     }
     public_jwk, private_jwk = _create_public_private_jwk_keys()
     signed_token = _get_signed_token(private_jwk=private_jwk, payload=payload)
@@ -81,7 +81,7 @@ async def test_authenticate_token_with_missing_jti():
     payload = {
         'exp': 9999999999,  # Max date
         'aud': OAUTH_CLIENT_ID,
-        'iss': OAUTH_REALM_URL,
+        'iss': OAUTH_ISSUER_URL,
     }
     public_jwk, private_jwk = _create_public_private_jwk_keys()
     signed_token = _get_signed_token(private_jwk=private_jwk, payload=payload)
@@ -101,7 +101,7 @@ async def test_authenticate_token_with_wrong_aud():
         'exp': 9999999999,  # Max date
         'jti': 'The unique identifier for this token',
         'aud': 'WRONG_AUDIENCE',
-        'iss': OAUTH_REALM_URL,
+        'iss': OAUTH_ISSUER_URL,
     }
     public_jwk, private_jwk = _create_public_private_jwk_keys()
     signed_token = _get_signed_token(private_jwk=private_jwk, payload=payload)

@@ -15,6 +15,12 @@ OAUTH_REALM_NAME = config('OAUTH_REALM_NAME')
 OAUTH_CLIENT_ID = config('OAUTH_CLIENT_ID')
 OAUTH_SECRET_KEY = config('OAUTH_SECRET_KEY')
 OAUTH_REALM_URL = f'{OAUTH_SERVER_URL}/realms/{OAUTH_REALM_NAME}'
+DEBUG = config('DEBUG', default=False, cast=bool)
+
+
+# So that the issuer of the JWT token is the same
+if DEBUG:
+    OAUTH_REALM_URL = OAUTH_REALM_URL.replace('auth', 'localhost')
 
 
 class KeycloakTokenValidator:
@@ -100,8 +106,11 @@ class KeycloakTokenValidator:
     async def logout(self, refresh_token: str) -> None:
         try:
             await self.keycloak.a_logout(refresh_token=refresh_token)
-        except KeycloakConnectionError:
-            pass
+        except KeycloakError as error:
+            raise InvalidTokenException(
+                f'Forbidden: something is wrong: {repr(error)}',
+                status_code=403,
+            )
 
     async def auth_url(self, scope: str, redirect_uri: str) -> str:
         try:

@@ -2,7 +2,7 @@ services:
   api:
     networks:
       - default
-      - keycloak
+      - my-ride-auth-network
     container_name: my-ride-api
     build:
       context: .
@@ -21,6 +21,5 @@ services:
     command: ["./entrypoint.sh", "local"]
 
 networks:
-  keycloak:
-    external: false
-    name: keycloak
+  my-ride-auth-network:
+    external: true

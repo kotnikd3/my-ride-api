@@ -14,13 +14,8 @@ OAUTH_SERVER_URL = config('OAUTH_SERVER_URL')
 OAUTH_REALM_NAME = config('OAUTH_REALM_NAME')
 OAUTH_CLIENT_ID = config('OAUTH_CLIENT_ID')
 OAUTH_SECRET_KEY = config('OAUTH_SECRET_KEY')
-OAUTH_REALM_URL = f'{OAUTH_SERVER_URL}/realms/{OAUTH_REALM_NAME}'
-DEBUG = config('DEBUG', default=False, cast=bool)
-
-
-# So that the issuer of the JWT token is the same
-if DEBUG:
-    OAUTH_REALM_URL = OAUTH_REALM_URL.replace('auth', 'localhost')
+OAUTH_ISSUER_URL = config('OAUTH_ISSUER_URL')
+OAUTH_REALM_URL = f'{OAUTH_ISSUER_URL}/realms/{OAUTH_REALM_NAME}'
 
 
 class KeycloakTokenValidator:

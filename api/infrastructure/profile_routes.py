@@ -33,7 +33,7 @@ async def profile(
         )
         return User(
             email=claims['email'],
-            preferred_username=claims['preferred_username'],
+            name=claims['name'],
             id=claims['sub'],
             contact_confirmed=claims['email_verified'],
         )

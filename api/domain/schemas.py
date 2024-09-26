@@ -6,6 +6,6 @@ from pydantic import BaseModel
 
 class User(BaseModel):
     email: str
-    preferred_username: str
+    name: str
     id: uuid.UUID  # Keycloak ID
     contact_confirmed: Optional[bool] = False

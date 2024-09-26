@@ -33,7 +33,7 @@ async def profile(
         )
         return User(
             email=claims['email'],
-            name=claims['name'],
+            given_name=claims['given_name'],
             id=claims['sub'],
             contact_confirmed=claims['email_verified'],
             identity_provider=claims.get('identity_provider', 'keycloak'),

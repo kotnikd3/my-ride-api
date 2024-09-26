@@ -36,5 +36,6 @@ async def profile(
             name=claims['name'],
             id=claims['sub'],
             contact_confirmed=claims['email_verified'],
+            identity_provider=claims.get('identity_provider', 'keycloak'),
         )
     return None

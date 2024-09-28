@@ -10,7 +10,7 @@ from api.services.exceptions import ServiceUnavailableException
 
 RIDE_SERVICE = config('RIDE_SERVICE')
 
-ride_router = APIRouter(prefix='/ride', tags=['ride'])
+ride_router = APIRouter(prefix='/rides', tags=['ride'])
 
 
 @ride_router.api_route(
@@ -28,7 +28,7 @@ async def proxy_request(
 
     # Construct the target URL
     target_url = (
-        f'{RIDE_SERVICE}/ride/{path}' if path else f'{RIDE_SERVICE}/ride'
+        f'{RIDE_SERVICE}/rides/{path}' if path else f'{RIDE_SERVICE}/rides'
     )
     if request.query_params:
         target_url = f'{target_url}?{request.query_params}'

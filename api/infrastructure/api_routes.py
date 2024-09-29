@@ -17,14 +17,12 @@ api_rooter = APIRouter(prefix='', tags=['api'])
 @api_rooter.get('/login', status_code=status.HTTP_307_TEMPORARY_REDIRECT)
 async def login(request: Request) -> RedirectResponse:
     redirect_uri = str(request.url_for('authorize'))
-
-    # Append the frontend_uri to the redirect_uri
-    if frontend_uri := request.query_params.get('frontend_uri'):
-        redirect_uri += f'?frontend_uri={frontend_uri}'
+    state = request.query_params.get('state')
 
     auth_url = await keycloak_validator.auth_url(
         scope='openid email',
         redirect_uri=redirect_uri,
+        state=state,
     )
 
     # Redirect user to auth server
@@ -36,10 +34,7 @@ async def authorize(request: Request) -> RedirectResponse:
     # Get the authorization code from the callback URL
     code = request.query_params.get('code')
     redirect_uri = str(request.url_for('authorize'))
-
-    # Append the frontend_uri to the redirect_uri
-    frontend_uri = request.query_params.get('frontend_uri')
-    redirect_uri += f'?frontend_uri={frontend_uri}'
+    state = request.query_params.get('state')
 
     # Exchange the authorization code for a token
     tokens = await keycloak_validator.get_tokens(
@@ -54,8 +49,8 @@ async def authorize(request: Request) -> RedirectResponse:
     }
     encrypted_session = session_encryptor.encrypt(data=data)
 
-    # Redirect user back to the front end app
-    response = RedirectResponse(url=frontend_uri, status_code=302)
+    # Redirect user back to the front end app (state)
+    response = RedirectResponse(url=state, status_code=302)
     response.set_cookie(
         key=COOKIE_NAME,
         value=encrypted_session,
@@ -75,8 +70,8 @@ async def logout(
     if tokens:
         await keycloak_validator.logout(refresh_token=tokens.refresh_token)
 
-    frontend_uri = request.query_params.get('frontend_uri')
-    response = RedirectResponse(url=frontend_uri, status_code=302)
+    state = request.query_params.get('state')
+    response = RedirectResponse(url=state, status_code=302)
     response.delete_cookie(key=COOKIE_NAME)
 
     return response

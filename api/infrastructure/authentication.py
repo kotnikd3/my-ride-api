@@ -106,11 +106,12 @@ class KeycloakTokenValidator:
                 status_code=403,
             )
 
-    async def auth_url(self, scope: str, redirect_uri: str) -> str:
+    async def auth_url(self, scope: str, redirect_uri: str, state: str) -> str:
         try:
             return await self.keycloak.a_auth_url(
                 scope=scope,
                 redirect_uri=redirect_uri,
+                state=state,
             )
         except KeycloakConnectionError:
             raise ServiceUnavailableException('Service Keycloak is unavailable')

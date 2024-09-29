@@ -37,7 +37,7 @@ def test_logout(mock_keycloak_logout, test_client):
     )
 
     response = test_client.get(
-        '/logout?frontend_uri=https://frontend', follow_redirects=False
+        '/logout?state=https://frontend', follow_redirects=False
     )
 
     assert 302 == response.status_code
@@ -51,7 +51,7 @@ def test_authorize(mock_keycloak_get_tokens, test_client):
     mock_keycloak_get_tokens.return_value = mocked_tokens()
 
     response = test_client.get(
-        url='/authorize?frontend_uri=https://frontend',
+        url='/authorize?state=https://frontend',
         params={'code': 'some_code'},
         follow_redirects=False,
     )

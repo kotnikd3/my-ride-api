@@ -31,8 +31,9 @@ elif [ "$1" = "test" ]; then
     pytest --cov tests/ --numprocesses ${NUM_CPU_FOR_TESTS:-auto}
     coverage report
     coverage erase
-    # Check for updated packages
-    pip list --outdated
+elif [ "$1" = "outdated" ]; then
+  # Check for updated packages
+  pip list --outdated
 else
     echo "Unknown command: '$1'";
     echo "Exiting!";

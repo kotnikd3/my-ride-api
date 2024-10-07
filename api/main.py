@@ -1,6 +1,5 @@
 from decouple import config
 from fastapi import FastAPI, HTTPException, Request
-from starlette.responses import RedirectResponse
 
 from api.infrastructure.api_routes import api_rooter
 from api.infrastructure.dependencies import COOKIE_NAME

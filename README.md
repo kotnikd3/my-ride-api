@@ -2,27 +2,9 @@
 API build in Python
 
 
-# Keycloak setup
-Add the following routes under `Clients/my-ride-api/Settings/Valid redirect URIs`:
-- http[s]://<API URL>/authorize
-
-Add the mapper for audience `my-ride-api` to the client.
-
-
-# Development setup
-
-On Mac, add the following line to `/etc/hosts`.
-```shell
-127.0.0.1       keycloak
-```
-
-Execute the following command.
-```shell
-sudo killall -HUP mDNSResponder
-```
-
 ## Local testing of API
-Command `docker compose build` builds Docker image and command `docker compose up api` starts the project.
+Command `docker compose build` builds Docker image and 
+command `docker compose up api` starts the project.
 
 
 # Development
@@ -33,6 +15,14 @@ To run all checks and tests, execute:
 
 ```shell
 docker compose run --rm --entrypoint ./entrypoint.sh api test local
+```
+
+## Update Python's packages
+
+To run all checks and tests, execute:
+
+```shell
+docker compose run --rm --entrypoint ./entrypoint.sh api outdated
 ```
 
 

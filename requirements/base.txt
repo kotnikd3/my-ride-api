@@ -1,5 +1,5 @@
-fastapi==0.115.0
-uvicorn[standard]==0.31.0
+fastapi==0.115.2
+uvicorn[standard]==0.32.0
 gunicorn==23.0.0
 python-decouple==3.8
 python-keycloak==4.6.2

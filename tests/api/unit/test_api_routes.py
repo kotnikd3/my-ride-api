@@ -51,8 +51,8 @@ def test_authorize(mock_keycloak_get_tokens, test_client):
     mock_keycloak_get_tokens.return_value = mocked_tokens()
 
     response = test_client.get(
-        url='/authorize?state=https://frontend',
-        params={'code': 'some_code'},
+        url='/authorize',
+        params={'code': 'some_code', 'state': 'https://frontend'},
         follow_redirects=False,
     )
 

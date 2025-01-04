@@ -4,7 +4,7 @@ from fastapi import FastAPI, HTTPException, Request
 from api.infrastructure.api_routes import api_rooter
 from api.infrastructure.dependencies import COOKIE_NAME
 from api.infrastructure.profile_routes import profile_router
-from api.infrastructure.ride_routes import ride_router
+from api.infrastructure.ride_routes import rides_router
 from api.services.exceptions import (
     InvalidTokenException,
     ServiceUnavailableException,
@@ -14,7 +14,7 @@ DEBUG = config('DEBUG', default=False, cast=bool)
 
 app = FastAPI(debug=DEBUG)
 app.include_router(api_rooter)
-app.include_router(ride_router)
+app.include_router(rides_router)
 app.include_router(profile_router)
 
 

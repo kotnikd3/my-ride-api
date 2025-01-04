@@ -8,12 +8,12 @@ from api.domain.value_objects import TokenDataVO
 from api.infrastructure.dependencies import COOKIE_NAME, get_tokens
 from api.services.exceptions import ServiceUnavailableException
 
-RIDE_SERVICE = config('RIDE_SERVICE')
+RIDES_SERVICE = config('RIDE_SERVICE')
 
-ride_router = APIRouter(prefix='/rides', tags=['ride'])
+rides_router = APIRouter(prefix='/rides', tags=['rides'])
 
 
-@ride_router.api_route(
+@rides_router.api_route(
     '/{path:path}',
     methods=['GET', 'POST', 'PUT', 'DELETE'],
 )
@@ -28,7 +28,7 @@ async def proxy_request(
 
     # Construct the target URL
     target_url = (
-        f'{RIDE_SERVICE}/rides/{path}' if path else f'{RIDE_SERVICE}/rides'
+        f'{RIDES_SERVICE}/rides/{path}' if path else f'{RIDES_SERVICE}/rides'
     )
     if request.query_params:
         target_url = f'{target_url}?{request.query_params}'

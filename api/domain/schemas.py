@@ -10,3 +10,4 @@ class User(BaseModel):
     id: uuid.UUID  # Keycloak ID
     identity_provider: str
     contact_confirmed: Optional[bool] = False
+    locale: str

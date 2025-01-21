@@ -37,5 +37,6 @@ async def profile(
             id=claims['sub'],
             contact_confirmed=claims['email_verified'],
             identity_provider=claims.get('identity_provider', 'keycloak'),
+            locale=claims.get('locale', 'nl'),
         )
     return None

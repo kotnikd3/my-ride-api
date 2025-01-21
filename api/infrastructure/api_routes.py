@@ -18,11 +18,12 @@ api_rooter = APIRouter(prefix='', tags=['api'])
 async def login(request: Request) -> RedirectResponse:
     redirect_uri = str(request.url_for('authorize'))
     state = request.query_params.get('state')
+    language = request.query_params.get('language')
 
     auth_url = await keycloak_validator.auth_url(
         scope='openid email',
         redirect_uri=redirect_uri,
-        state=state,
+        state=f'{state}&ui_locales={language}',  # Keycloak's UI language
     )
 
     # Redirect user to auth server

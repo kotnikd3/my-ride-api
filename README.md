@@ -1,5 +1,15 @@
 # my-ride-api
-API build in Python
+## About the project
+A FastAPI-based microservice as a proxy to all the other microservices. It
+provides OAuth2 token rotation with Keycloak.
+
+
+## Integration into my-ride ecosystem
+Refer to `my-ride` documentation for a software architecture overview.
+
+
+## API and authentication
+Most of the endpoints requires an OAuth2 token issued by Keycloak.
 
 
 ## Local testing of API

@@ -24,7 +24,7 @@ RUN set -ex; \
 # Base image to deploy to Google Cloud Platform
 FROM base AS gcp-base
 
-COPY my-ride-api /app/my-ride-api
+COPY api /app/api
 COPY entrypoint.sh /app/
 
 ENTRYPOINT ["./entrypoint.sh"]

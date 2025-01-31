@@ -1,0 +1,52 @@
+steps:
+  - id: Build image
+    name: gcr.io/cloud-builders/docker
+    args:
+      - build
+      - '--target=$_BUILD_TARGET'
+      - '--tag=$_ARTIFACT_REGISTRY/$PROJECT_ID/$REPO_NAME/$_SERVICE_NAME:$COMMIT_SHA'
+      - '--file=Dockerfile'
+      - .
+    timeout: 900s
+
+  - id: Push image
+    name: gcr.io/cloud-builders/docker
+    args:
+      - push
+      - '$_ARTIFACT_REGISTRY/$PROJECT_ID/$REPO_NAME/$_SERVICE_NAME:$COMMIT_SHA'
+
+  - id: Deploy image
+    name: gcr.io/google.com/cloudsdktool/cloud-sdk
+    args:
+      - run
+      - services
+      - update
+      - $_SERVICE_NAME
+      - '--platform=$_PLATFORM'
+      - '--image=$_ARTIFACT_REGISTRY/$PROJECT_ID/$REPO_NAME/$_SERVICE_NAME:$COMMIT_SHA'
+      - >-
+        --labels=managed-by=gcp-cloud-build-deploy-cloud-run,commit-sha=$COMMIT_SHA,gcb-build-id=$BUILD_ID,gcb-trigger-id=$_TRIGGER_ID
+      - '--region=$_DEPLOY_REGION'
+      - '--quiet'
+    entrypoint: gcloud
+    timeout: 600s
+
+options:
+  logging: CLOUD_LOGGING_ONLY
+
+substitutions:
+  _ARTIFACT_REGISTRY: europe-west4-docker.pkg.dev
+  _BUILD_TARGET: gcp-dev
+  _SERVICE_NAME: my-ride-api-dev
+  _PLATFORM: managed
+  _DEPLOY_REGION: europe-west4
+
+timeout: 1200s
+
+images:
+  - $_ARTIFACT_REGISTRY/$PROJECT_ID/$REPO_NAME/$_SERVICE_NAME:$COMMIT_SHA
+
+tags:
+  - gcp-cloud-build-deploy-cloud-run
+  - gcp-cloud-build-deploy-cloud-run-managed
+  - my-ride-api-dev

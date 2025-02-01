@@ -16,7 +16,7 @@ elif [ "$1" = "prod" ]; then
     # For environments with multiple CPU cores, increase the number of workers
     # to be equal to the cores available.
     # Timeout is set to 0 to disable the timeouts of the workers to allow Cloud Run to handle instance scaling.
-    gunicorn --worker-class uvicorn.workers.UvicornWorker --threads 8 --timeout 0 --bind 0.0.0.0:$PORT --workers ${NUM_OF_UVICORN_WORKERS:-1} --log-level ${LOG_LEVEL:-warning} api.main:app
+    gunicorn --worker-class uvicorn.workers.UvicornWorker --threads 8 --timeout 0 --bind 0.0.0.0:$PORT --workers ${NUM_OF_UVICORN_WORKERS:-1} --log-level ${LOG_LEVEL:-warning} --forwarded-allow-ips="*" --proxy-protocol api.main:app
 elif [ "$1" = "test" ]; then
     # Clean the code
     if [ "$2" = "local" ]; then

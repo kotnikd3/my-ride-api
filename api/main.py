@@ -1,4 +1,4 @@
-from decouple import config
+from decouple import Csv, config
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -11,6 +11,7 @@ from api.services.exceptions import (
     ServiceUnavailableException,
 )
 
+ALLOW_ORIGINS = config('ALLOW_ORIGINS', cast=Csv())
 DEBUG = config('DEBUG', default=False, cast=bool)
 
 app = FastAPI(debug=DEBUG)
@@ -21,7 +22,7 @@ app.include_router(profile_router)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=['https://ritzoeker.nl'],
+    allow_origins=ALLOW_ORIGINS,
     allow_credentials=True,
     allow_methods=['GET', 'POST', 'PUT', 'DELETE'],
     allow_headers=['*'],

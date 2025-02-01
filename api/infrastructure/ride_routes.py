@@ -44,7 +44,7 @@ async def proxy_request(
                 url=target_url,
                 headers=headers,
                 json=body,
-                timeout=4,
+                timeout=10,  # Because of Cloud Run cold starts
             )
     except (httpx.TimeoutException, httpx.ConnectError) as error:
         raise ServiceUnavailableException(

@@ -1,5 +1,6 @@
 from decouple import config
 from fastapi import FastAPI, HTTPException, Request
+from fastapi.middleware.cors import CORSMiddleware
 
 from api.infrastructure.api_routes import api_rooter
 from api.infrastructure.dependencies import COOKIE_NAME
@@ -18,16 +19,13 @@ app.include_router(rides_router)
 app.include_router(profile_router)
 
 
-if DEBUG:
-    from fastapi.middleware.cors import CORSMiddleware
-
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=['http://localhost:8005'],
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
-    )
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=['https://ritzoeker.nl'],
+    allow_credentials=True,
+    allow_methods=['GET', 'POST', 'PUT', 'DELETE'],
+    allow_headers=['*'],
+)
 
 
 @app.exception_handler(InvalidTokenException)

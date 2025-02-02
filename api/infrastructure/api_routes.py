@@ -34,8 +34,14 @@ async def login(request: Request) -> RedirectResponse:
 async def authorize(request: Request) -> RedirectResponse:
     # Get the authorization code from the callback URL
     code = request.query_params.get('code')
-    redirect_uri = str(request.url_for('authorize'))
     state = request.query_params.get('state')
+
+    response = RedirectResponse(url=state, status_code=302)
+    if not code:
+        # E.g. user did not accept terms and conditions
+        return response
+
+    redirect_uri = str(request.url_for('authorize'))
 
     # Exchange the authorization code for a token
     tokens = await keycloak_validator.get_tokens(
@@ -51,7 +57,6 @@ async def authorize(request: Request) -> RedirectResponse:
     encrypted_session = session_encryptor.encrypt(data=data)
 
     # Redirect user back to the front end app (state)
-    response = RedirectResponse(url=state, status_code=302)
     response.set_cookie(
         key=COOKIE_NAME,
         value=encrypted_session,

@@ -60,3 +60,20 @@ def test_authorize(mock_keycloak_get_tokens, test_client):
     assert response.is_redirect
     assert 'https://frontend' == response.headers['location']
     assert COOKIE_NAME in response.cookies
+
+
+@patch.object(KeycloakTokenValidator, 'get_tokens', new_callable=AsyncMock)
+def test_authorize_without_code(mock_keycloak_get_tokens, test_client):
+    """User doesn't accept Terms & Conditions"""
+    mock_keycloak_get_tokens.return_value = mocked_tokens()
+
+    response = test_client.get(
+        url='/authorize',
+        params={'state': 'https://frontend'},
+        follow_redirects=False,
+    )
+
+    assert 302 == response.status_code
+    assert response.is_redirect
+    assert 'https://frontend' == response.headers['location']
+    assert COOKIE_NAME not in response.cookies

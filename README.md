@@ -1,15 +1,23 @@
 # my-ride-api
 ## About the project
-A FastAPI-based microservice as a proxy to all the other microservices. It
-provides OAuth2 token rotation with Keycloak.
+A FastAPI-based microservice as a proxy to all the other microservices, which implements the following functionality: If the user's request does not contain a session, the system redirects the user to the Keycloak identity provider, retrieves a token, encrypts it, and stores it in the session. If the user's request does contain a session, the system retrieves the token, decrypts it, and uses it to access downstream services.
+
+It implements [Backend For Frontend (BFF) Oauth2.0 application architecture](https://datatracker.ietf.org/doc/html/draft-ietf-oauth-browser-based-apps-24#name-application-architecture).
+
+This solution was replaced by [Apache Apisix](https://apisix.apache.org/).
 
 
 ## Integration into my-ride ecosystem
-Refer to `my-ride` documentation for a software architecture overview.
+The following UML deployment diagram shows all the components and the communication between them.
+
+![UML_deployment_diagram](docs/my_ride_api_deployment_diagram.png)
 
 
-## API and authentication
-Most of the endpoints requires an OAuth2 token issued by Keycloak.
+## Software design
+Project follows clean architecture and SOLID principles. In short, high-level modules (business rules) do not depend on low-level ones (database, UI, API).
+It consists of domain, application service and infrastructure layers.
+
+Project follows testing pyramid framework from test driven development approach.
 
 
 ## Local testing of API
